@@ -28,11 +28,11 @@ export function NotesWorkspace() {
     [items, selectedId],
   );
 
-  async function refresh(preferredId?: string | null) {
+  async function refresh(preferredId?: string | null, searchText = query, selectedFilter = filter) {
     const next = await desktop.listLibraryItems({
-      query,
-      kind: filter === "favorites" ? "all" : filter,
-      favoritesOnly: filter === "favorites",
+      query: searchText,
+      kind: selectedFilter === "favorites" ? "all" : selectedFilter,
+      favoritesOnly: selectedFilter === "favorites",
     });
     setItems(next);
     const target = preferredId ?? selectedId;
@@ -141,7 +141,7 @@ export function NotesWorkspace() {
         </div>
         <div className="flex gap-1 overflow-x-auto border-b border-border p-2">
           {(["all", "note", "snippet", "favorites"] as const).map((value) => (
-            <button key={value} onClick={() => { setFilter(value); window.setTimeout(() => void refresh(null), 0); }} className={"whitespace-nowrap rounded px-2 py-1.5 text-[11px] capitalize " + (filter === value ? "bg-brand-soft text-brand-strong" : "text-muted hover:bg-hover")}>
+            <button key={value} onClick={() => { setFilter(value); void refresh(null, query, value); }} className={"whitespace-nowrap rounded px-2 py-1.5 text-[11px] capitalize " + (filter === value ? "bg-brand-soft text-brand-strong" : "text-muted hover:bg-hover")}>
               {value}
             </button>
           ))}
