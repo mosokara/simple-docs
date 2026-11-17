@@ -7,7 +7,8 @@ The Library stores notes and snippets in a private SQLite database inside the ap
 ## Latest status
 
 - Stable release: v1.0.0
-- Package version: v1.1.0\n- v2 development: active on the `v2-development` branch (not released yet)
+- Package version: v1.1.0
+- v2 development: active on the `v2-development` branch (not released yet)
 
 Download the stable Windows release from the repository Releases page.
 
