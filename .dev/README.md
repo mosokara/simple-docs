@@ -2,25 +2,24 @@
 
 This folder is the development source of truth for maintaining Simple Docs.
 
-Start with:
-- architecture.md — how the application layers communicate.
-- development.md — how to run, test, debug, commit, and change the project.
-- source-files.md — what every source/config file does and where each important code section belongs.
-- code-changes.md — rules for common feature changes and filesystem safety.
-- production.md — Windows production build, release, and updater flow.
+- architecture.md — renderer, preload, IPC, and SQLite boundaries.
+- development.md — local run, validation, and development workflow.
+- source-files.md — source file responsibilities.
+- code-changes.md — engineering rules for Library changes.
+- production.md — Windows packaging and updater flow.
 
-Core rule:
+Core architecture:
 
 ```text
 React UI
    ↓
 typed desktop API
    ↓
-preload / IPC
+restricted preload / IPC
    ↓
 Electron main
-   ├─ SQLite Library (notes + snippets)
-   └─ real Windows folders (Files workspace)
+   ↓
+SQLite Library in app user-data
 ```
 
-The Library database lives in Electron app user data. The Files workspace reads selected folders in place. Keep these storage systems separate, and never put user data in GitHub.
+The application manages notes and code in nested Library folders. The legacy real-filesystem Explorer has been removed. User content stays in the app's local data directory and must never be committed to GitHub.
