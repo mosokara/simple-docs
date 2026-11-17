@@ -220,3 +220,15 @@ Windows application icon. Keep it as a valid ICO suitable for packaged builds.
 ## .dev/
 
 Developer documentation itself. Keep it committed; do not replace it with a private README workflow.
+
+
+## Library and SQLite
+
+- `components/notes-workspace.tsx`: Library UI for notes and code snippets.
+- `electron/database.cjs`: SQLite initialization, schema, and Library queries.
+- `types/library.ts`: renderer-facing Library types and save input.
+- `electron/main.cjs`: Library IPC handlers and database lifecycle.
+- `electron/preload.cjs`: restricted Library IPC bridge.
+- `lib/desktop-api.ts`: typed renderer methods for Library operations.
+
+The SQLite database is stored in Electron's app user-data directory, not in the repository or the selected Files folder.
