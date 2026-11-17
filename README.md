@@ -15,7 +15,7 @@ Download the stable Windows release from the repository Releases page.
 ## Features
 
 - Create and edit personal notes in the local Library.
-- Save reusable code snippets with a language label.
+- Save reusable code snippets with a language label, syntax-highlighted preview, and one-click copy.
 - Search notes and snippets, filter by type or favorites, and mark favorites.
 - Store Library data locally in SQLite, separate from the folders opened in Files.
 - Open any local folder.
