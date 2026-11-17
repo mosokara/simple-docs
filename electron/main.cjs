@@ -6,6 +6,7 @@ const { pathToFileURL } = require("node:url");
 const { spawn, execFileSync } = require("node:child_process");
 const archiver = require("archiver");
 const { autoUpdater } = require("electron-updater");
+const library = require("./database.cjs");
 
 // Use the application's own toolbar instead of Electron's default menu bar.
 Menu.setApplicationMenu(null);
@@ -739,6 +740,20 @@ async function exportFolder() {
 function registerIpc() {
   ipcMain.handle("state:get", () => ({ rootPath, selectedPath }));
 
+  ipcMain.handle("library:list", (_event, options) => library.listNotes(options ?? {}));
+  ipcMain.handle("library:open", (_event, id) => {
+    const item = library.touchNote(id);
+    if (!item) throw new Error("This library item no longer exists.");
+    return item;
+  });
+  ipcMain.handle("library:save", (_event, input) => library.saveNote(input));
+  ipcMain.handle("library:delete", (_event, id) => library.deleteNote(id));
+  ipcMain.handle("library:favorite", (_event, id, favorite) => {
+    const item = library.setFavorite(id, favorite);
+    if (!item) throw new Error("This library item no longer exists.");
+    return item;
+  });
+
   ipcMain.handle("state:selected", async (_event, value) => {
     selectedPath = typeof value === "string" ? value : null;
     await saveState();
@@ -791,12 +806,17 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  library.initializeDatabase(app.getPath("userData"));
   await loadState();
   registerIpc();
   if (app.isPackaged) registerAppProtocol();
   createWindow();
   startWatcher();
   setupAutoUpdater();
+});
+
+app.on("before-quit", () => {
+  library.closeDatabase();
 });
 
 app.on("window-all-closed", () => {
