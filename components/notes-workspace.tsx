@@ -258,8 +258,10 @@ export function NotesWorkspace({
   }
 
   async function removeItem(id: string) {
-    const item = items.find((entry) => entry.id === id);
-    if (!item || !window.confirm(`Delete "${item.title}" permanently?`)) return;
+    let item: LibraryNote;
+    try { item = await desktop.openLibraryItem(id); }
+    catch { setMessage("This item no longer exists."); return; }
+    if (!window.confirm(`Delete "${item.title}" permanently?`)) return;
     await desktop.deleteLibraryItem(id);
     if (selectedId === id) {
       setSelectedId(null); setTitle(""); setContent(""); setDirty(false);
@@ -318,6 +320,7 @@ export function NotesWorkspace({
       setDirty(true);
       return;
     }
+    setDirty(true);
     setBusy(true);
     try {
       const saved = await desktop.saveLibraryItem({
