@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Simple Docs",
-  description: "A simple local documentation viewer for real folders on your computer.",
+  description: "A local-first personal library for notes and code snippets, with a local folder explorer.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
