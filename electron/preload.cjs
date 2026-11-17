@@ -17,6 +17,11 @@ contextBridge.exposeInMainWorld("simpleDocs", {
   openExternalUrl: (url) => ipcRenderer.invoke("shell:openExternal", url),
   exportZip: () => ipcRenderer.invoke("folder:export"),
   setSelectedFile: (relativePath) => ipcRenderer.invoke("state:selected", relativePath),
+  listLibraryItems: (options) => ipcRenderer.invoke("library:list", options),
+  openLibraryItem: (id) => ipcRenderer.invoke("library:open", id),
+  saveLibraryItem: (input) => ipcRenderer.invoke("library:save", input),
+  deleteLibraryItem: (id) => ipcRenderer.invoke("library:delete", id),
+  setLibraryFavorite: (id, favorite) => ipcRenderer.invoke("library:favorite", id, favorite),
   onFolderChanged: (callback) => {
     const listener = () => callback();
     ipcRenderer.on("folder:changed", listener);
