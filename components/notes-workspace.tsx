@@ -37,8 +37,8 @@ export function NotesWorkspace() {
     setItems(next);
     const target = preferredId ?? selectedId;
     const current = next.find((item) => item.id === target) ?? next[0] ?? null;
-    setSelectedId(current?.id ?? null);
     if (syncEditor) {
+      setSelectedId(current?.id ?? null);
       if (current) {
         setTitle(current.title);
         setContent(current.content);
@@ -54,7 +54,7 @@ export function NotesWorkspace() {
   }
 
   useEffect(() => {
-    void refresh(null).catch((error) => setMessage(error.message));
+    void refresh(null).catch((error) => setMessage(error instanceof Error ? error.message : "Could not load the Library."));
   // Initial load only; refresh is intentionally controlled by user actions.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
