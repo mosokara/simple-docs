@@ -59,9 +59,28 @@ export function NotesWorkspace() {
   }
 
   useEffect(() => {
-    void refresh(null).catch((error) => setMessage(error instanceof Error ? error.message : "Could not load the Library."));
-  // Initial load only; refresh is intentionally controlled by user actions.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    let active = true;
+
+    async function loadLibrary() {
+      try {
+        const nextItems = await desktop.listLibraryItems();
+        if (!active) return;
+        setItems(nextItems);
+        const first = nextItems[0] ?? null;
+        setSelectedId(first?.id ?? null);
+        setTitle(first?.title ?? "");
+        setContent(first?.content ?? "");
+        setKind(first?.kind ?? "note");
+        setLanguage(first?.language ?? "javascript");
+      } catch (error) {
+        if (active) {
+          setMessage(error instanceof Error ? error.message : "Could not load the Library.");
+        }
+      }
+    }
+
+    void loadLibrary();
+    return () => { active = false; };
   }, []);
 
   async function selectItem(item: LibraryNote) {
