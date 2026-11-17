@@ -1,39 +1,39 @@
 # Architecture
 
-## Product workspaces
-
-Simple Docs has two independent local-first workspaces:
-
-- **Library**: notes and code snippets stored in a private SQLite database under `app.getPath("userData")`.
-- **Files**: the existing Explorer-style browser for real folders. Files remain in their original locations and are never silently imported into the Library.
-
-The Library is the primary workspace. The Files workspace is retained for compatibility and direct access to existing documentation folders.
-
-## Runtime layers
+## Runtime
 
 ```text
 Next.js / React renderer
       ↓
-typed lib/desktop-api.ts
+lib/desktop-api.ts
       ↓
-restricted electron/preload.cjs contextBridge
+electron/preload.cjs (restricted contextBridge)
       ↓
 IPC handlers in electron/main.cjs
-      ├─ electron/database.cjs → SQLite in app userData
-      └─ filesystem / dialogs / Explorer / editor / watcher / ZIP
+      ↓
+electron/database.cjs
+      ↓
+SQLite in app.getPath("userData")
 ```
 
-## Storage boundaries
+## Storage
 
-- Renderer components must not access SQLite, Node.js APIs, or the filesystem directly.
-- All Library reads and writes go through typed desktop API methods and IPC.
-- SQLite is stored outside the repository and outside any selected Files folder.
-- The database schema is initialized by `electron/database.cjs`; schema changes must use explicit, versioned migrations.
-- Notes and snippets share one table and are distinguished by the `kind` field.
-- Categories, tags, and note-tag relationships have dedicated tables for future organization features.
-- Never commit a user's database, notes, snippets, or backups to GitHub.
+- Notes, code items, favorites, and nested folders are stored in SQLite.
+- The database file is `simple-docs.sqlite` under Electron app user data.
+- Renderer components never access SQLite or Node.js APIs directly.
+- All database access stays in Electron main and uses parameterized SQL.
+- Schema changes use explicit migrations. The current schema version is 2.
+- Existing schema-v1 notes are retained and receive a null `folder_id`, so they remain available at the Library root.
 
-## Library save flow
+## Main data model
+
+- `notes`: note/code title, text, kind, language, favorite, timestamps, and optional folder.
+- `folders`: nested folders through `parent_id`.
+- `categories`, `tags`, and `note_tags`: retained existing organization tables.
+
+Deleting a folder is allowed only when it has no child folders or items. This avoids accidental content deletion.
+
+## IPC flow
 
 ```text
 NotesWorkspace
@@ -44,63 +44,22 @@ preload IPC: library:save
   ↓
 main.cjs IPC handler
   ↓
-database.cjs validation + parameterized SQLite query
+database.cjs validation + parameterized SQL
   ↓
-saved LibraryNote returned to renderer
+LibraryNote returned to renderer
 ```
 
-## Library open flow
+## Editor behavior
 
-Opening an item updates its `last_opened_at` timestamp. Favorites are stored as a boolean flag. Search currently covers title and content, with a bounded result set.
+- New items start in Edit mode.
+- Existing items open in Preview mode.
+- Ctrl+S invokes the save operation.
+- A beforeunload handler warns when the current editor has unsaved changes.
+- Title editing starts on double-click and commits on Enter or blur.
 
-## Files workspace
-
-The existing filesystem architecture remains unchanged:
-
-```text
-Windows filesystem
-      ↓
-electron/main.cjs
-      ↓
-electron/preload.cjs
-      ↓
-lib/desktop-api.ts
-      ↓
-DocsApp / DocsSidebar / FileViewer
-```
-
-`scanFolder()` builds a recursive `DocFolder` tree. The root uses relative path `""`; a child folder receives its real relative path. Creation actions pass that path unchanged.
-
-## Files create flow
-
-```text
-UI button
-  ↓
-DocsApp.openCreateDialog(type, parentPath)
-  ↓
-desktop.createFolder/createFile(parentPath, name)
-  ↓
-preload IPC
-  ↓
-main createFolder/createFile
-  ↓
-validation + filesystem write
-  ↓
-scan + watcher refresh
-```
-
-## Delete flow
-
-- Library deletion removes one database record; its confirmation is handled in the renderer.
-- Files deletion sends a relative root-item path. Electron main verifies that the target stays inside the opened root, asks for native confirmation, removes the nested file/folder, clears deleted selection state, and schedules a refresh.
-
-## Backups and migration status
-
-The existing ZIP action backs up the selected Files folder only. It does not include the SQLite Library database. A separate Library backup/restore flow and a safe, non-destructive Markdown/TXT import flow must be implemented before describing the app as having complete backup or migration support.
-
-## Security rules
+## Security
 
 - Keep `contextIsolation: true` and `nodeIntegration: false`.
-- Do not expose raw `fs`, `path`, `child_process`, `ipcRenderer`, or SQLite objects to the renderer.
-- Validate IPC input in the main process and use parameterized SQL statements.
-- Treat all future import/restore paths as untrusted input and prevent path traversal.
+- Never expose `fs`, `path`, `child_process`, `ipcRenderer`, or SQLite objects to the renderer.
+- Validate IPC input and use parameterized SQL.
+- Keep user data out of Git and the application source tree.
