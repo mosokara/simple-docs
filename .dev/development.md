@@ -3,7 +3,7 @@
 ## Requirements
 
 - Windows
-- Node.js LTS
+- Node.js 24+
 - npm
 - VS Code recommended
 
@@ -19,69 +19,38 @@ npm run dev
 ```bash
 npm run typecheck
 npm run lint
+npm test
 npm run build
 npm run dist
 ```
 
 ## Development loop
 
-1. Work on the feature branch.
-2. Make one focused change.
-3. Run typecheck and lint.
-4. Start Electron and exercise the exact user flow.
-5. Run `npm run dist` for packaged Windows behavior.
-6. Commit the focused change.
-7. Push and update the PR.
+1. Make a focused change on the feature branch.
+2. Run typecheck, lint, and tests.
+3. Start Electron and exercise the exact user flow.
+4. Run `npm run dist` before packaging a Windows release.
+5. Commit the focused change and update the PR.
 
-## Filesystem checklist
+## Library checks
 
-Test:
-- root and nested creation
-- duplicate names
-- invalid Windows names
-- right click on root-level and deeply nested files/folders
-- native delete confirmation
-- deleting a folder with contents
-- external watcher refresh
-- root header double-click and context-menu Open in Explorer
-- state restoration
+- Create, edit, preview, search, favorite, and delete notes/code.
+- Create nested folders and add items to the correct folder.
+- Rename folders and titles.
+- Reject deleting folders that still contain child folders or items.
+- Right-click folders and items.
+- Resize the sidebar and verify its width persists after restart.
+- Ctrl+S saves; closing with unsaved changes prompts for confirmation.
+- Confirm old schema-v1 notes remain visible after migration.
 
-## UI rules
-
-Use existing tokens from `app/globals.css`. Inputs intentionally change only their border color when focused; no large outline is shown.
-
-Use native `title` tooltips for small utility buttons when the requested interaction is simply explanatory text.
-
-## IPC change order
+## IPC order
 
 ```text
-main.cjs
-  ↓
-preload.cjs
-  ↓
-types/electron.d.ts
-  ↓
-lib/desktop-api.ts
-  ↓
-React component
-  ↓
-.dev documentation
+main.cjs → preload.cjs → types/electron.d.ts → lib/desktop-api.ts → React UI
 ```
 
-Never expose raw `fs`, `path`, `child_process`, or `ipcRenderer` to the renderer.
+Never expose raw Node.js APIs or SQLite objects to the renderer.
 
+## SQLite
 
-## SQLite runtime
-
-The desktop app uses Electron's bundled Node.js runtime and the built-in `node:sqlite` module. Keep SQLite access in the Electron main process. Do not add a native third-party SQLite dependency without first evaluating Electron rebuild and Windows packaging implications.
-
-After changing database code, verify the app in Electron (not only with the system Node version), then run:
-
-```bash
-npm run typecheck
-npm run lint
-npm run build
-npm run dist
-```
-
-The current Library schema is version 1. Any schema change must add an explicit migration instead of assuming that editing `CREATE TABLE IF NOT EXISTS` updates existing databases.
+Use Electron's bundled Node.js runtime and built-in `node:sqlite`. Keep all SQL in `electron/database.cjs`, use parameterized statements, and add versioned migrations for schema changes. Never store personal content in the Git repository.
