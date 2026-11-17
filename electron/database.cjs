@@ -117,11 +117,10 @@ function listNotes({ query = "", kind = "all", favoritesOnly = false, recentOnly
   if (favoritesOnly) conditions.push("is_favorite = 1");
   if (folderId !== undefined) { conditions.push("folder_id = ?"); params.push(folderId); }
   if (query.trim()) {
-    conditions.push("(title LIKE ? ESCAPE '\\\\' OR content LIKE ? ESCAPE '\\\\')");
-    const escaped = query.trim().replace(/[\\%_]/g, "\\\\$&");
-    params.push(`%${escaped}%`, `%${escaped}%`);
-  }
-  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    conditions.push("(title LIKE ? OR content LIKE ?)");
+    const pattern = `%${query.trim()}%`;
+    params.push(pattern, pattern);
+  }  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   const order = recentOnly ? "COALESCE(last_opened_at, updated_at) DESC" : "is_favorite DESC, updated_at DESC";
   return db().prepare(`SELECT * FROM notes ${where} ORDER BY ${order} LIMIT 500`).all(...params).map(mapNote);
 }
