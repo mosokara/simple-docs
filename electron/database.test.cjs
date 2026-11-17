@@ -3,7 +3,9 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const { DatabaseSync } = require("node:sqlite");
 const library = require("./database.cjs");
+const extraPaths = [];
 
 let userDataPath;
 
@@ -15,6 +17,7 @@ before(() => {
 after(() => {
   library.closeDatabase();
   fs.rmSync(userDataPath, { recursive: true, force: true });
+  for (const extraPath of extraPaths) fs.rmSync(extraPath, { recursive: true, force: true });
 });
 
 test("creates, searches, opens, favorites, updates, and deletes a library item", () => {
@@ -85,5 +88,38 @@ test("creates nested folders and assigns notes without deleting contents", () =>
   library.deleteNote(item.id);
   assert.equal(library.deleteFolder(child.id), true);
   assert.equal(library.deleteFolder(parent.id), true);
+  assert.equal(library.listFolders().length, 0);
+});
+
+
+test("migrates schema-v1 notes into the folder-aware schema without data loss", () => {
+  library.closeDatabase();
+  const legacyPath = fs.mkdtempSync(path.join(os.tmpdir(), "simple-docs-legacy-"));
+  extraPaths.push(legacyPath);
+  const legacy = new DatabaseSync(path.join(legacyPath, "simple-docs.sqlite"));
+  legacy.exec(`
+    CREATE TABLE notes (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      kind TEXT NOT NULL DEFAULT 'note',
+      language TEXT,
+      is_favorite INTEGER NOT NULL DEFAULT 0,
+      category_id TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      last_opened_at TEXT
+    );
+    INSERT INTO notes (id, title, content, kind, created_at, updated_at)
+    VALUES ('legacy-note', 'Old note', 'Keep this content', 'note', '2026-01-01', '2026-01-02');
+    PRAGMA user_version = 1;
+  `);
+  legacy.close();
+
+  library.initializeDatabase(legacyPath);
+  const migrated = library.getNote("legacy-note");
+  assert.equal(migrated.title, "Old note");
+  assert.equal(migrated.content, "Keep this content");
+  assert.equal(migrated.folderId, null);
   assert.equal(library.listFolders().length, 0);
 });
