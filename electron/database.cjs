@@ -41,13 +41,6 @@ function initializeDatabase(userDataPath) {
   `);
 
   database.exec(`
-  `);
-
-  const columns = database.prepare("PRAGMA table_info(notes)").all().map((column) => column.name);
-  if (!columns.includes("folder_id")) {
-    database.exec("ALTER TABLE notes ADD COLUMN folder_id TEXT REFERENCES folders(id) ON DELETE SET NULL");
-  }
-  database.exec(`
     CREATE TABLE IF NOT EXISTS folders (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL COLLATE NOCASE,
@@ -55,6 +48,13 @@ function initializeDatabase(userDataPath) {
       created_at TEXT NOT NULL,
       UNIQUE(parent_id, name)
     );
+  `);
+
+  const columns = database.prepare("PRAGMA table_info(notes)").all().map((column) => column.name);
+  if (!columns.includes("folder_id")) {
+    database.exec("ALTER TABLE notes ADD COLUMN folder_id TEXT REFERENCES folders(id) ON DELETE SET NULL");
+  }
+  database.exec(`
     CREATE INDEX IF NOT EXISTS idx_notes_folder ON notes(folder_id, updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_folders_parent ON folders(parent_id, name COLLATE NOCASE);
     PRAGMA user_version = 2;
