@@ -1,212 +1,102 @@
 # Simple Docs
 
-Simple Docs is a local-first Windows desktop app for managing personal notes and reusable code snippets, while keeping its original local-folder document explorer.
+Simple Docs is a local-first Windows desktop app for managing notes and code, organized in nested folders and stored in a private SQLite database.
 
-The Library stores notes and snippets in a private SQLite database inside the app's user-data directory. The Files workspace continues to read real folders directly without moving or copying their contents.
-
-## Latest status
+## Current development status
 
 - Stable release: v1.0.0
 - Package version: v1.1.0
-- v2 development: active on the `v2-development` branch (not released yet)
-
-Download the stable Windows release from the repository Releases page.
+- Current work: v2 development on `v2-development` (not released yet)
 
 ## Features
 
-- Create and edit personal notes in the local Library.
-- Save reusable code snippets with a language label, syntax-highlighted preview, and one-click copy.
-- Search notes and snippets, filter by type or favorites, and mark favorites.
-- Store Library data locally in SQLite, separate from the folders opened in Files.
-- Open any local folder.
-- Browse nested directories in an Explorer-style tree.
-- Create a new folder or file directly from the Explorer.
-- Create items in the root folder or inside any visible folder.
-- Open a context menu on any file or folder in the Explorer with New Folder, New File, and Delete actions.
-- Delete files/folders with native confirmation.
-- Double-click the root folder header to open it in Windows File Explorer.
-- Use native tooltips on creation buttons to show their target absolute path.
-- Start the app maximized.
-- Resize the Explorer sidebar.
-- Search file names, paths, and text/code contents.
-- Preview Markdown, TXT, PDF, and images.
-- Syntax-highlight common code files with Shiki.
-- Copy fenced Markdown code blocks.
-- Follow Markdown links to files and headings.
-- Open Markdown, TXT, and code files in VS Code.
-- Open Office files with their installed desktop applications.
-- Detect external changes to the real folder and refresh the Explorer.
-- Restore the last opened folder and selected file.
-- Export the whole folder as a ZIP backup with progress.
-- Use a small custom toolbar instead of Electron's default application menu.
+- Create, edit, preview, search, and delete notes.
+- Create and edit code files with language selection, syntax highlighting, and copy.
+- Organize notes and code in nested folders for languages, courses, or tracks.
+- Recent and Favorites navigation.
+- Double-click an item's title to rename it; the new title is saved on Enter or when focus leaves the field.
+- Edit/Preview toggle, Ctrl+S saving, and an unsaved-changes warning when closing the app.
+- Right-click context menus for folders and items.
+- Resizable sidebar with its width remembered locally.
+- Light and dark themes.
+- SQLite storage inside Electron's app user-data directory. User content is not stored in the repository.
 
-## Creating files and folders
+## Editor behavior
 
-The Explorer has two small creation buttons in the root folder header.
+- New notes and code open in Edit mode.
+- Existing items open in Preview mode.
+- Use the pencil button to switch between Edit and Preview.
+- Press Ctrl+S to save. A Save action appears in the footer while there are unsaved changes.
+- Closing the app with unsaved changes triggers the standard browser/Electron confirmation.
+- Double-click the title to rename. Press Enter or click outside the title field to save the new name.
 
-- New Folder creates a folder in the opened root directory.
-- New File creates an empty file in the opened root directory.
+## Folder behavior
 
-Every visible folder also has the same two buttons. Clicking a folder's buttons creates the item inside that folder.
-
-For a file, enter the full filename, including the extension when needed:
-
-~~~text
-notes.md
-todo.txt
-server.js
-~~~
-
-Names are checked in the Electron main process. Invalid Windows characters, reserved Windows device names, path traversal, and accidental file overwrites are rejected.
-
-## Supported document groups
-
-| Group | Extensions / examples |
-| --- | --- |
-| Markdown | .md |
-| Text | .txt |
-| Code | JavaScript, TypeScript, JSX, TSX, JSON, HTML, CSS, SCSS, Vue, Svelte, Python, Java, C/C++, C#, Go, Rust, PHP, SQL, shell, YAML, TOML, GraphQL, Prisma, Terraform, Dart, Swift, Kotlin, Assembly, Zig, and more |
-| PDF | .pdf |
-| Images | .png, .jpg, .jpeg, .webp, .gif, .svg |
-| Word | .doc, .docx, .docm, .dot, .dotx, .dotm |
-| PowerPoint | .ppt, .pptx, .pptm, .pps, .ppsx, .pot, .potx |
-| Excel | .xls, .xlsx, .xlsm, .xlsb, .xlt, .xltx, .xltm |
-| Access | .mdb, .accdb, .accde, .mde |
-
-Office documents are recognized by the Explorer and opened with the default desktop application instead of being converted to an in-app editor.
-
-## File type colors
-
-File colors are visual labels only. Every supported extension has its own muted identity instead of sharing one generic code/document color.
-
-The configuration lives in app/globals.css, while types/file-type.ts maps each filename to its extension color key.
-
-Examples: .js uses a muted JavaScript-style yellow, .ts uses a muted blue, .html uses a muted orange, and .pdf uses a muted red. Unsupported files use the error-like fallback color.
-
-Every supported extension uses a --token-ext-* token. Unsupported files use --token-file-other / --token-error.
-
-## Customization reference
-
-| What you want to change | File |
-| --- | --- |
-| Main UI and file colors | app/globals.css |
-| File type metadata and Shiki mapping | types/file-type.ts |
-| File extension classification for Electron | electron/main.cjs |
-| Explorer layout and creation buttons | components/docs-sidebar.tsx, components/file-tree.tsx |
-| Main application state and actions | components/docs-app.tsx |
-| Viewer behavior | components/file-viewer.tsx, components/markdown-viewer.tsx, components/code-viewer.tsx |
-| Electron renderer bridge | electron/preload.cjs |
-| Typed desktop API | lib/desktop-api.ts |
-| Electron IPC types | types/electron.d.ts |
-| Window, filesystem, watcher, ZIP, updater | electron/main.cjs |
-| App metadata and HTML shell | app/layout.tsx |
-| Release configuration | package.json, .github/workflows/release.yml, RELEASING.md |
-
-Detailed development documentation is committed under `.dev/`. Start with `.dev/README.md`.
-
-## Markdown pipeline
-
-~~~text
-Markdown file
-    ↓
-marked
-    ↓
-DOMPurify
-    ↓
-Markdown HTML
-    ↓
-Shiki for fenced code blocks
-~~~
-
-Heading IDs are stable. Relative links are resolved from the current Markdown document. External web and mail links are opened by the operating system.
+Folders support nested folders and contain notes or code items. A folder must be empty before it can be deleted; this prevents accidental deletion of its contents. Right-click a folder to create a subfolder, note, or code item, rename it, or delete it.
 
 ## Electron architecture
 
-~~~text
+```text
 Next.js + React
       ↓
-preload.cjs (restricted contextBridge)
+typed desktop API
       ↓
-IPC
+restricted preload contextBridge
       ↓
-main.cjs
-  ├─ SQLite library (notes + snippets)
-  └─ filesystem / dialogs / VS Code / Explorer / watcher / ZIP / updater
-~~~
+IPC handlers in Electron main
+      ↓
+SQLite database in app user-data
+```
 
-The renderer does not receive unrestricted Node.js filesystem access. Desktop operations are exposed through the preload bridge and handled by Electron's main process.
+The renderer has no direct access to Node.js or SQLite. All database operations stay in Electron's main process and use parameterized SQL.
 
 ## Project structure
 
-~~~text
+```text
 app/
   globals.css
   layout.tsx
   page.tsx
-
 components/
   code-viewer.tsx
   docs-app.tsx
   docs-header.tsx
-  docs-sidebar.tsx
-  export-status.tsx
-  file-context-menu.tsx
-  file-tree.tsx
-  file-viewer.tsx
-  markdown-viewer.tsx
-  new-item-dialog.tsx
-
-.dev/
-  README.md
-  architecture.md
-  development.md
-  source-files.md
-  code-changes.md
-  production.md
-
+  notes-workspace.tsx
 electron/
   database.cjs
+  database.test.cjs
   main.cjs
   preload.cjs
-
 lib/
   desktop-api.ts
-
 types/
-  docs.ts
   library.ts
   electron.d.ts
-  file-type.ts
-
+.dev/
+  developer documentation
 build/
   icon.ico
-~~~
-
-The components are intentionally flat. Add a subfolder only when a group becomes large enough to justify a clear separation.
+```
 
 ## Local development
 
-Requirements:
-- Windows
-- Node.js LTS
-- npm
-- VS Code recommended
+Requirements: Windows, Node.js 24+, npm.
 
-~~~bash
+```bash
 npm install
 npm run dev
 npm run typecheck
 npm run lint
+npm test
+npm run build
 npm run dist
-~~~
+```
 
-The dist command creates the Windows installer and ZIP archive locally. The current ZIP export in Files backs up the selected folder only; Library database backup/restore and legacy-file migration are not implemented yet.
+The SQLite database is stored in Electron's user-data directory. Do not commit database files, personal notes, code, or backups to GitHub.
 
 ## Releases
 
-Windows x64 releases are published by GitHub Actions from version tags such as v1.0.0 and v1.1.0.
-
-The current production configuration uses an unsigned Windows build. Code signing can be added later.
+Windows x64 releases use electron-builder (NSIS + ZIP) and electron-updater. See `RELEASING.md` before publishing.
 
 ## License
 
