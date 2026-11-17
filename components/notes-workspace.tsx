@@ -55,6 +55,7 @@ export function NotesWorkspace({
   const [folderEditor, setFolderEditor] = useState<{ id?: string; parentId?: string | null; name: string } | null>(null);
   const [folderNameDraft, setFolderNameDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const cancelTitleEditRef = useRef(false);
   const resizeRef = useRef<{ x: number; width: number } | null>(null);
   const activeFolder = activeView.type === "folder" ? folders.find((folder) => folder.id === activeView.folderId) ?? null : null;
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
@@ -311,6 +312,11 @@ export function NotesWorkspace({
   }
 
   async function commitTitle() {
+    if (cancelTitleEditRef.current) {
+      cancelTitleEditRef.current = false;
+      setEditingTitle(false);
+      return;
+    }
     const nextTitle = titleDraft.trim();
     setEditingTitle(false);
     if (!nextTitle) {
