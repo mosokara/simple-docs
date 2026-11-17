@@ -12,15 +12,15 @@ Start with:
 Core rule:
 
 ```text
-Real Windows folder
-      ↓
-Electron main
-      ↓
-preload / IPC
-      ↓
-typed desktop API
-      ↓
 React UI
+   ↓
+typed desktop API
+   ↓
+preload / IPC
+   ↓
+Electron main
+   ├─ SQLite Library (notes + snippets)
+   └─ real Windows folders (Files workspace)
 ```
 
-The real local folder is always the source of truth. Do not add a second document database unless the architecture is intentionally changed.
+The Library database lives in Electron app user data. The Files workspace reads selected folders in place. Keep these storage systems separate, and never put user data in GitHub.
