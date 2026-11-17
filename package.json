@@ -2,7 +2,7 @@
   "name": "simple-docs",
   "version": "1.1.0",
   "private": true,
-  "description": "A local-first personal library for notes and code snippets, with a local folder explorer.",
+  "description": "A local-first personal library for notes and code, organized in folders and stored in SQLite.",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && electron . --dev\"",
@@ -15,7 +15,6 @@
     "test": "node --test"
   },
   "dependencies": {
-    "archiver": "^7.0.1",
     "electron-updater": "6.8.9"
   },
   "devDependencies": {
