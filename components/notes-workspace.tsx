@@ -56,7 +56,6 @@ export function NotesWorkspace({
   const [folderNameDraft, setFolderNameDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
   const resizeRef = useRef<{ x: number; width: number } | null>(null);
-  const selected = useMemo(() => items.find((item) => item.id === selectedId) ?? null, [items, selectedId]);
   const activeFolder = activeView.type === "folder" ? folders.find((folder) => folder.id === activeView.folderId) ?? null : null;
 
   async function loadFolders() {
