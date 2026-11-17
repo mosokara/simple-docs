@@ -8,10 +8,18 @@ export type LibraryNote = {
   language: string | null;
   favorite: boolean;
   categoryId: string | null;
+  folderId: string | null;
   createdAt: string;
   updatedAt: string;
   lastOpenedAt: string | null;
   tags: string[];
+};
+
+export type LibraryFolder = {
+  id: string;
+  name: string;
+  parentId: string | null;
+  createdAt: string;
 };
 
 export type LibraryCategory = {
@@ -26,5 +34,6 @@ export type SaveLibraryItemInput = {
   content: string;
   kind: LibraryItemKind;
   language?: string | null;
+  folderId?: string | null;
   categoryId?: string | null;
 };
