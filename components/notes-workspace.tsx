@@ -392,10 +392,10 @@ export function NotesWorkspace({
   }
 
   return (
-    <section className="flex min-h-0 flex-1 overflow-hidden">
+    <section className="relative flex min-h-0 flex-1 overflow-hidden">
       <aside
         style={{ width }}
-        className={"absolute inset-y-14 left-0 z-30 flex max-w-[calc(100vw-3rem)] shrink-0 flex-col border-r border-border bg-bg-alt transition-transform md:static md:translate-x-0 " + (mobileOpen ? "translate-x-0" : "-translate-x-full")}
+        className={"absolute inset-y-0 left-0 z-30 flex max-w-[calc(100vw-3rem)] shrink-0 flex-col border-r border-border bg-bg-alt transition-transform md:static md:translate-x-0 " + (mobileOpen ? "translate-x-0" : "-translate-x-full")}
       >
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="grid shrink-0 grid-cols-2 gap-2 border-b border-border p-3">
