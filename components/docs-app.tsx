@@ -8,6 +8,7 @@ import { DocsSidebar } from "./docs-sidebar";
 import { ExportStatus } from "./export-status";
 import { NewItemDialog } from "./new-item-dialog";
 import { FileViewer } from "./file-viewer";
+import { NotesWorkspace } from "./notes-workspace";
 
 function findFile(folder: DocFolder | null, target: string | null): DocFile | null {
   if (!folder || !target) return null;
@@ -29,6 +30,7 @@ export function DocsApp() {
     () => true,
     () => false,
   );
+  const [view, setView] = useState<"library" | "files">("library");
   const [tree, setTree] = useState<DocFolder | null>(null);
   const [rootPath, setRootPath] = useState<string | null>(null);
   const [selected, setSelected] = useState<DocFile | null>(null);
@@ -352,7 +354,7 @@ export function DocsApp() {
         onToggleMobile={() => setMobileOpen((value) => !value)}
       />
 
-      <NewItemDialog
+      {view === "files" && <NewItemDialog
         type={creationType}
         parentPath={creationParentPath}
         name={creationName}
