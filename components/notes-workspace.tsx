@@ -111,7 +111,16 @@ export function NotesWorkspace() {
     }
   }
 
-  async function copyCode() {\n    try {\n      await navigator.clipboard.writeText(content);\n      setMessage("Copied to clipboard");\n    } catch {\n      setMessage("Clipboard access was denied.");\n    }\n  }\n\n  async function remove() {
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(content);
+      setMessage("Copied to clipboard");
+    } catch {
+      setMessage("Clipboard access was denied.");
+    }
+  }
+
+  async function remove() {
     if (!selectedId || !window.confirm("Delete this item permanently?")) return;
     await desktop.deleteLibraryItem(selectedId);
     setSelectedId(null);
