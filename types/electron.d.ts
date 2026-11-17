@@ -1,41 +1,18 @@
-import type { DocFolder, FilePayload, SearchResult } from "./docs";
-import type { LibraryNote, SaveLibraryItemInput } from "./library";
+import type { LibraryFolder, LibraryNote, SaveLibraryItemInput } from "./library";
 
 declare global {
   interface Window {
     simpleDocs?: {
-      getState(): Promise<{ rootPath: string | null; selectedPath: string | null }>;
-      openFolder(): Promise<{ rootPath: string | null; tree: DocFolder | null }>;
-      createFolder(relativeParent: string, name: string): Promise<{ ok: boolean; path?: string; message?: string }>;
-      createFile(relativeParent: string, name: string): Promise<{ ok: boolean; path?: string; message?: string }>;
-      deleteItem(relativePath: string): Promise<{ ok: boolean; canceled?: boolean; path?: string; message?: string }>;
-      openRootInExplorer(): Promise<{ ok: boolean; message?: string }>;
-      scan(): Promise<DocFolder | null>;
-      readFile(relativePath: string): Promise<FilePayload>;
-      search(query: string): Promise<SearchResult[]>;
-      openInEditor(relativePath: string): Promise<{ ok: boolean; message?: string; method?: string }>;
-      revealInExplorer(relativePath: string): Promise<{ ok: boolean; message?: string }>;
-      revealExport(absolutePath: string): Promise<{ ok: boolean; message?: string }>;
-      openDefault(relativePath: string): Promise<{ ok: boolean; message?: string }>;
-      openExternalUrl(url: string): Promise<{ ok: boolean; message?: string }>;
-      exportZip(): Promise<{ ok: boolean; path?: string; canceled?: boolean; message?: string }>;
-      setSelectedFile(relativePath: string | null): Promise<void>;
-      listLibraryItems(options?: { query?: string; kind?: "all" | "note" | "snippet"; favoritesOnly?: boolean; recentOnly?: boolean }): Promise<LibraryNote[]>;
+      listLibraryItems(options?: { query?: string; kind?: "all" | "note" | "snippet"; favoritesOnly?: boolean; recentOnly?: boolean; folderId?: string | null }): Promise<LibraryNote[]>;
       openLibraryItem(id: string): Promise<LibraryNote>;
       saveLibraryItem(input: SaveLibraryItemInput): Promise<LibraryNote>;
       deleteLibraryItem(id: string): Promise<boolean>;
       setLibraryFavorite(id: string, favorite: boolean): Promise<LibraryNote>;
-      onFolderChanged(callback: () => void): () => void;
-      onExportProgress(callback: (payload: {
-        status: "preparing" | "compressing" | "complete" | "error";
-        percent: number;
-        processedBytes?: number;
-        totalBytes?: number;
-        processedFiles?: number;
-        totalFiles?: number;
-        path?: string;
-        message?: string;
-      }) => void): () => void;
+      listFolders(): Promise<LibraryFolder[]>;
+      createFolder(name: string, parentId?: string | null): Promise<LibraryFolder>;
+      renameFolder(id: string, name: string): Promise<LibraryFolder>;
+      deleteFolder(id: string): Promise<boolean>;
+      openExternalUrl(url: string): Promise<{ ok: boolean }>;
     };
   }
 }
