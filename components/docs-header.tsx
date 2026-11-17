@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Menu, Search, X } from "lucide-react";
+import { BookOpen, Download, FolderTree, Menu, Search, X } from "lucide-react";
 import type { DocFile, SearchResult } from "@/types/docs";
 import { fileColorStyle } from "@/types/file-type";
 
@@ -10,6 +10,8 @@ type Props = {
   exporting: boolean;
   hasFolder: boolean;
   mobileOpen: boolean;
+  view: "library" | "files";
+  onViewChange: (view: "library" | "files") => void;
   onQueryChange: (value: string) => void;
   onSelectResult: (file: DocFile) => void;
   onExport: () => void;
@@ -22,6 +24,8 @@ export function DocsHeader({
   exporting,
   hasFolder,
   mobileOpen,
+  view,
+  onViewChange,
   onQueryChange,
   onSelectResult,
   onExport,
@@ -41,7 +45,7 @@ export function DocsHeader({
         <span className="text-brand">Simple</span> Docs
       </div>
 
-      <div className="relative ml-auto min-w-0 flex-1 max-w-2xl">
+      {view === "files" && <div className="relative ml-auto min-w-0 flex-1 max-w-2xl">
         <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-placeholder" />
         <input
           value={query}
