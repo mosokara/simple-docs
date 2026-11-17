@@ -71,3 +71,15 @@ Make the change in this order:
 main → preload → types → desktop-api → React → .dev docs
 
 Then run typecheck/lint and test the packaged app for desktop behavior.
+
+
+## 9. Library storage
+
+The Library is backed by SQLite in Electron's app user-data directory.
+
+- Keep all database access in `electron/database.cjs` and call it only from the Electron main process.
+- Expose narrow operations through main IPC, preload, `types/electron.d.ts`, and `lib/desktop-api.ts`.
+- Use parameterized SQL; never concatenate user-provided values into SQL.
+- Update the schema with explicit migrations and tests. Editing `CREATE TABLE IF NOT EXISTS` does not alter an existing database.
+- Never store a user's notes, snippets, or database file in the repository.
+- Do not claim Files ZIP export backs up the Library database; these are separate data stores.
