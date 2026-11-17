@@ -61,3 +61,29 @@ test("rejects empty titles and non-text content", () => {
   assert.throws(() => library.saveNote({ title: " ", content: "", kind: "note" }), /title is required/i);
   assert.throws(() => library.saveNote({ title: "Valid", content: 42, kind: "note" }), /must be text/i);
 });
+
+
+test("creates nested folders and assigns notes without deleting contents", () => {
+  const parent = library.createFolder("JavaScript");
+  const child = library.createFolder("React", parent.id);
+  const item = library.saveNote({
+    title: "useEffect",
+    content: "useEffect(() => {}, []);",
+    kind: "snippet",
+    language: "javascript",
+    folderId: child.id,
+  });
+
+  assert.equal(item.folderId, child.id);
+  assert.equal(library.listNotes({ folderId: child.id })[0].id, item.id);
+  assert.equal(library.listFolders().length, 2);
+  assert.throws(() => library.deleteFolder(parent.id), /contents/i);
+
+  const renamed = library.renameFolder(child.id, "React Hooks");
+  assert.equal(renamed.name, "React Hooks");
+
+  library.deleteNote(item.id);
+  assert.equal(library.deleteFolder(child.id), true);
+  assert.equal(library.deleteFolder(parent.id), true);
+  assert.equal(library.listFolders().length, 0);
+});
