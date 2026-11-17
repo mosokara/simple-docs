@@ -1,7 +1,6 @@
 "use client";
 
-import type { FilePayload, SearchResult } from "@/types/docs";
-import type { SaveLibraryItemInput } from "@/types/library";
+import type { LibraryFolder, LibraryNote, SaveLibraryItemInput } from "@/types/library";
 
 export function isDesktopAvailable() {
   return typeof window !== "undefined" && !!window.simpleDocs;
@@ -13,36 +12,14 @@ function api() {
 }
 
 export const desktop = {
-  getState: () => api().getState(),
-  openFolder: () => api().openFolder(),
-  createFolder: (relativeParent: string, name: string) => api().createFolder(relativeParent, name),
-  createFile: (relativeParent: string, name: string) => api().createFile(relativeParent, name),
-  deleteItem: (relativePath: string) => api().deleteItem(relativePath),
-  openRootInExplorer: () => api().openRootInExplorer(),
-  scan: () => api().scan(),
-  readFile: (path: string): Promise<FilePayload> => api().readFile(path),
-  search: (query: string): Promise<SearchResult[]> => api().search(query),
-  openInEditor: (path: string) => api().openInEditor(path),
-  revealInExplorer: (path: string) => api().revealInExplorer(path),
-  revealExport: (absolutePath: string) => api().revealExport(absolutePath),
-  openDefault: (path: string) => api().openDefault(path),
+  listLibraryItems: (options?: { query?: string; kind?: "all" | "note" | "snippet"; favoritesOnly?: boolean; recentOnly?: boolean; folderId?: string | null }): Promise<LibraryNote[]> => api().listLibraryItems(options),
+  openLibraryItem: (id: string): Promise<LibraryNote> => api().openLibraryItem(id),
+  saveLibraryItem: (input: SaveLibraryItemInput): Promise<LibraryNote> => api().saveLibraryItem(input),
+  deleteLibraryItem: (id: string): Promise<boolean> => api().deleteLibraryItem(id),
+  setLibraryFavorite: (id: string, favorite: boolean): Promise<LibraryNote> => api().setLibraryFavorite(id, favorite),
+  listFolders: (): Promise<LibraryFolder[]> => api().listFolders(),
+  createFolder: (name: string, parentId?: string | null): Promise<LibraryFolder> => api().createFolder(name, parentId),
+  renameFolder: (id: string, name: string): Promise<LibraryFolder> => api().renameFolder(id, name),
+  deleteFolder: (id: string): Promise<boolean> => api().deleteFolder(id),
   openExternalUrl: (url: string) => api().openExternalUrl(url),
-  exportZip: () => api().exportZip(),
-  setSelectedFile: (path: string | null) => api().setSelectedFile(path),
-  listLibraryItems: (options?: { query?: string; kind?: "all" | "note" | "snippet"; favoritesOnly?: boolean; recentOnly?: boolean }) => api().listLibraryItems(options),
-  openLibraryItem: (id: string) => api().openLibraryItem(id),
-  saveLibraryItem: (input: SaveLibraryItemInput) => api().saveLibraryItem(input),
-  deleteLibraryItem: (id: string) => api().deleteLibraryItem(id),
-  setLibraryFavorite: (id: string, favorite: boolean) => api().setLibraryFavorite(id, favorite),
-  onFolderChanged: (callback: () => void) => api().onFolderChanged(callback),
-  onExportProgress: (callback: (payload: {
-    status: "preparing" | "compressing" | "complete" | "error";
-    percent: number;
-    processedBytes?: number;
-    totalBytes?: number;
-    processedFiles?: number;
-    totalFiles?: number;
-    path?: string;
-    message?: string;
-  }) => void) => api().onExportProgress(callback),
 } as const;
