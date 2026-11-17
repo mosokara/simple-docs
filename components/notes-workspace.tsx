@@ -35,8 +35,9 @@ export function NotesWorkspace() {
   async function refresh(preferredId?: string | null, searchText = query, selectedFilter = filter, syncEditor = true) {
     const next = await desktop.listLibraryItems({
       query: searchText,
-      kind: selectedFilter === "favorites" ? "all" : selectedFilter,
+      kind: selectedFilter === "favorites" || selectedFilter === "recent" ? "all" : selectedFilter,
       favoritesOnly: selectedFilter === "favorites",
+      recentOnly: selectedFilter === "recent",
     });
     setItems(next);
     const target = preferredId ?? selectedId;
