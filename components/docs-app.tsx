@@ -345,6 +345,8 @@ export function DocsApp() {
         exporting={exporting}
         hasFolder={!!rootPath}
         mobileOpen={mobileOpen}
+        view={view}
+        onViewChange={(nextView) => { setView(nextView); setMobileOpen(false); }}
         onQueryChange={handleQueryChange}
         onSelectResult={(file) => {
           selectFile(file);
@@ -354,81 +356,84 @@ export function DocsApp() {
         onToggleMobile={() => setMobileOpen((value) => !value)}
       />
 
-      {view === "files" && <NewItemDialog
-        type={creationType}
-        parentPath={creationParentPath}
-        name={creationName}
-        error={creationError}
-        busy={creationBusy}
-        onNameChange={(value) => {
-          setCreationName(value);
-          if (creationError) setCreationError("");
-        }}
-        onSubmit={() => void submitCreateDialog()}
-        onClose={closeCreateDialog}
-      />
-
-      <ExportStatus
-        status={exportStatus}
-        progress={exportProgress}
-        message={exportMessage}
-        path={exportPath}
-        onShow={() => {
-          if (!exportPath) return;
-
-          void desktop.revealExport(exportPath).then((result) => {
-            if (!result.ok) setExportMessage(result.message ?? "Could not open the folder.");
-          }).catch((reason) => {
-            setExportMessage(reason instanceof Error ? reason.message : "Could not open the folder.");
-          });
-        }}
-        onDismiss={() => {
-          setExportStatus("idle");
-          setExportPath(null);
-          setExportMessage("");
-        }}
-      />
-
-      <div className="flex min-h-0 flex-1">
-        <DocsSidebar
-          tree={tree}
-          rootPath={rootPath}
-          selectedPath={selected?.path ?? null}
-          mobileOpen={mobileOpen}
-          busy={busy}
-          onSelect={selectFile}
-          onOpenFolder={() => void openFolder()}
-          onCreateFolder={(parentPath) => openCreateDialog("folder", parentPath)}
-          onCreateFile={(parentPath) => openCreateDialog("file", parentPath)}
-          onDeleteItem={(relativePath) => void deleteItem(relativePath)}
-          onOpenInExplorer={(relativePath) => void openInExplorer(relativePath)}
-          onOpenRootInExplorer={async () => {
-            if (!rootPath) return;
-            const result = await desktop.openRootInExplorer();
-            if (!result.ok) {
-              setExportMessage(result.message ?? "Could not open the folder.");
-            }
-          }}
-        />
-
-        {mobileOpen && (
-          <button
-            className="fixed inset-0 z-20 bg-black/35 md:hidden"
-            onClick={() => setMobileOpen(false)}
-            aria-label="Close file explorer"
+      {view === "library" ? (
+        <NotesWorkspace />
+      ) : (
+        <>
+          <NewItemDialog
+            type={creationType}
+            parentPath={creationParentPath}
+            name={creationName}
+            error={creationError}
+            busy={creationBusy}
+            onNameChange={(value) => {
+              setCreationName(value);
+              if (creationError) setCreationError("");
+            }}
+            onSubmit={() => void submitCreateDialog()}
+            onClose={closeCreateDialog}
           />
-        )}
 
-        <main className="min-w-0 flex-1 overflow-hidden bg-bg">
-          <FileViewer
-            key={selected ? selected.path + ":" + selected.modifiedAt + ":" + selected.size : "empty"}
-            file={selected}
-            anchor={selectedAnchor}
-            onEdit={editFile}
-            onNavigate={navigateTo}
+          <ExportStatus
+            status={exportStatus}
+            progress={exportProgress}
+            message={exportMessage}
+            path={exportPath}
+            onShow={() => {
+              if (!exportPath) return;
+              void desktop.revealExport(exportPath).then((result) => {
+                if (!result.ok) setExportMessage(result.message ?? "Could not open the folder.");
+              }).catch((reason) => {
+                setExportMessage(reason instanceof Error ? reason.message : "Could not open the folder.");
+              });
+            }}
+            onDismiss={() => {
+              setExportStatus("idle");
+              setExportPath(null);
+              setExportMessage("");
+            }}
           />
-        </main>
-      </div>
+
+          <div className="flex min-h-0 flex-1">
+            <DocsSidebar
+              tree={tree}
+              rootPath={rootPath}
+              selectedPath={selected?.path ?? null}
+              mobileOpen={mobileOpen}
+              busy={busy}
+              onSelect={selectFile}
+              onOpenFolder={() => void openFolder()}
+              onCreateFolder={(parentPath) => openCreateDialog("folder", parentPath)}
+              onCreateFile={(parentPath) => openCreateDialog("file", parentPath)}
+              onDeleteItem={(relativePath) => void deleteItem(relativePath)}
+              onOpenInExplorer={(relativePath) => void openInExplorer(relativePath)}
+              onOpenRootInExplorer={async () => {
+                if (!rootPath) return;
+                const result = await desktop.openRootInExplorer();
+                if (!result.ok) setExportMessage(result.message ?? "Could not open the folder.");
+              }}
+            />
+
+            {mobileOpen && (
+              <button
+                className="fixed inset-0 z-20 bg-black/35 md:hidden"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close file explorer"
+              />
+            )}
+
+            <main className="min-w-0 flex-1 overflow-hidden bg-bg">
+              <FileViewer
+                key={selected ? selected.path + ":" + selected.modifiedAt + ":" + selected.size : "empty"}
+                file={selected}
+                anchor={selectedAnchor}
+                onEdit={editFile}
+                onNavigate={navigateTo}
+              />
+            </main>
+          </div>
+        </>
+      )}
     </div>
   );
 }
