@@ -1,6 +1,7 @@
 "use client";
 
 import type { FilePayload, SearchResult } from "@/types/docs";
+import type { SaveLibraryItemInput } from "@/types/library";
 
 export function isDesktopAvailable() {
   return typeof window !== "undefined" && !!window.simpleDocs;
@@ -28,6 +29,11 @@ export const desktop = {
   openExternalUrl: (url: string) => api().openExternalUrl(url),
   exportZip: () => api().exportZip(),
   setSelectedFile: (path: string | null) => api().setSelectedFile(path),
+  listLibraryItems: (options?: { query?: string; kind?: "all" | "note" | "snippet"; favoritesOnly?: boolean }) => api().listLibraryItems(options),
+  openLibraryItem: (id: string) => api().openLibraryItem(id),
+  saveLibraryItem: (input: SaveLibraryItemInput) => api().saveLibraryItem(input),
+  deleteLibraryItem: (id: string) => api().deleteLibraryItem(id),
+  setLibraryFavorite: (id: string, favorite: boolean) => api().setLibraryFavorite(id, favorite),
   onFolderChanged: (callback: () => void) => api().onFolderChanged(callback),
   onExportProgress: (callback: (payload: {
     status: "preparing" | "compressing" | "complete" | "error";
