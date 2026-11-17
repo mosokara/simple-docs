@@ -28,7 +28,7 @@ export function NotesWorkspace() {
     [items, selectedId],
   );
 
-  async function refresh(preferredId?: string | null, searchText = query, selectedFilter = filter) {
+  async function refresh(preferredId?: string | null, searchText = query, selectedFilter = filter, syncEditor = true) {
     const next = await desktop.listLibraryItems({
       query: searchText,
       kind: selectedFilter === "favorites" ? "all" : selectedFilter,
@@ -38,16 +38,18 @@ export function NotesWorkspace() {
     const target = preferredId ?? selectedId;
     const current = next.find((item) => item.id === target) ?? next[0] ?? null;
     setSelectedId(current?.id ?? null);
-    if (current) {
-      setTitle(current.title);
-      setContent(current.content);
-      setKind(current.kind);
-      setLanguage(current.language ?? "javascript");
-      setDirty(false);
-    } else if (!target) {
-      setTitle("");
-      setContent("");
-      setDirty(false);
+    if (syncEditor) {
+      if (current) {
+        setTitle(current.title);
+        setContent(current.content);
+        setKind(current.kind);
+        setLanguage(current.language ?? "javascript");
+        setDirty(false);
+      } else if (!target) {
+        setTitle("");
+        setContent("");
+        setDirty(false);
+      }
     }
   }
 
@@ -136,12 +138,12 @@ export function NotesWorkspace() {
           </div>
           <label className="relative block">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => event.key === "Enter" && void refresh(null)} placeholder="Search your library" className="h-9 w-full border border-border bg-bg pl-9 pr-3 text-xs outline-none focus:border-brand" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { if (dirty && !window.confirm("Discard your unsaved changes?")) return; setDirty(false); void refresh(null); } }} placeholder="Search your library" className="h-9 w-full border border-border bg-bg pl-9 pr-3 text-xs outline-none focus:border-brand" />
           </label>
         </div>
         <div className="flex gap-1 overflow-x-auto border-b border-border p-2">
           {(["all", "note", "snippet", "favorites"] as const).map((value) => (
-            <button key={value} onClick={() => { setFilter(value); void refresh(null, query, value); }} className={"whitespace-nowrap rounded px-2 py-1.5 text-[11px] capitalize " + (filter === value ? "bg-brand-soft text-brand-strong" : "text-muted hover:bg-hover")}>
+            <button key={value} onClick={() => { if (dirty && !window.confirm("Discard your unsaved changes?")) return; setDirty(false); setFilter(value); void refresh(null, query, value); }} className={"whitespace-nowrap rounded px-2 py-1.5 text-[11px] capitalize " + (filter === value ? "bg-brand-soft text-brand-strong" : "text-muted hover:bg-hover")}>
               {value}
             </button>
           ))}
