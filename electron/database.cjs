@@ -135,10 +135,12 @@ function saveNote(input) {
   if (typeof input.content !== "string") throw new Error("Note content must be text.");
   const kind = input.kind === "snippet" ? "snippet" : "note";
   const language = kind === "snippet" && typeof input.language === "string" ? input.language.slice(0, 40) : null;
-  const folderId = typeof input.folderId === "string" && input.folderId ? input.folderId : null;
+  const existing = input.id ? db().prepare("SELECT id, folder_id FROM notes WHERE id = ?").get(input.id) : null;
+  const folderId = input.folderId === undefined
+    ? (existing?.folder_id ?? null)
+    : (typeof input.folderId === "string" && input.folderId ? input.folderId : null);
   if (folderId && !db().prepare("SELECT id FROM folders WHERE id = ?").get(folderId)) throw new Error("Target folder not found.");
   const now = new Date().toISOString();
-  const existing = input.id ? db().prepare("SELECT id FROM notes WHERE id = ?").get(input.id) : null;
   if (existing) {
     db().prepare("UPDATE notes SET title = ?, content = ?, kind = ?, language = ?, folder_id = ?, updated_at = ? WHERE id = ?")
       .run(title, input.content, kind, language, folderId, now, input.id);
