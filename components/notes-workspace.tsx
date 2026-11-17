@@ -17,7 +17,7 @@ export function NotesWorkspace() {
   const [items, setItems] = useState<LibraryNote[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"all" | "note" | "snippet" | "favorites">("all");
+  const [filter, setFilter] = useState<"all" | "note" | "snippet" | "favorites" | "recent">("all");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [kind, setKind] = useState<LibraryItemKind>("note");
@@ -146,7 +146,7 @@ export function NotesWorkspace() {
           </label>
         </div>
         <div className="flex gap-1 overflow-x-auto border-b border-border p-2">
-          {(["all", "note", "snippet", "favorites"] as const).map((value) => (
+          {(["all", "note", "snippet", "favorites", "recent"] as const).map((value) => (
             <button key={value} onClick={() => { if (dirty && !window.confirm("Discard your unsaved changes?")) return; setDirty(false); setFilter(value); void refresh(null, query, value); }} className={"whitespace-nowrap rounded px-2 py-1.5 text-[11px] capitalize " + (filter === value ? "bg-brand-soft text-brand-strong" : "text-muted hover:bg-hover")}>
               {value}
             </button>
