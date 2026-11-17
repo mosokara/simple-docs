@@ -69,3 +69,19 @@ React component
 ```
 
 Never expose raw `fs`, `path`, `child_process`, or `ipcRenderer` to the renderer.
+
+
+## SQLite runtime
+
+The desktop app uses Electron's bundled Node.js runtime and the built-in `node:sqlite` module. Keep SQLite access in the Electron main process. Do not add a native third-party SQLite dependency without first evaluating Electron rebuild and Windows packaging implications.
+
+After changing database code, verify the app in Electron (not only with the system Node version), then run:
+
+```bash
+npm run typecheck
+npm run lint
+npm run build
+npm run dist
+```
+
+The current Library schema is version 1. Any schema change must add an explicit migration instead of assuming that editing `CREATE TABLE IF NOT EXISTS` updates existing databases.
