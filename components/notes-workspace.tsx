@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Code2, Copy, FileText, Folder, FolderPlus, Heart, ChevronRight, ChevronDown,
   Plus, Search, Pencil, Trash2, MoreHorizontal, FilePlus2, Clock3, Star, X,
@@ -301,24 +301,45 @@ export function NotesWorkspace({
     setMenu(null);
   }
 
-  function commitTitle() {
+  async function commitTitle() {
+    const nextTitle = titleDraft.trim();
     setEditingTitle(false);
-    if (titleDraft.trim() && titleDraft.trim() !== title) {
-      setTitle(titleDraft.trim());
-      setDirty(true);
-      if (selectedId) {
-        const nextTitle = titleDraft.trim();
-        window.setTimeout(() => {
-          setTitle(nextTitle);
-          setDirty(true);
-        }, 0);
-      }
-    } else {
+    if (!nextTitle) {
       setTitleDraft(title);
+      return;
+    }
+    if (nextTitle === title) return;
+    setTitle(nextTitle);
+    if (!selectedId) {
+      setDirty(true);
+      return;
+    }
+    setBusy(true);
+    try {
+      const saved = await desktop.saveLibraryItem({
+        id: selectedId,
+        title: nextTitle,
+        content,
+        kind,
+        language: kind === "snippet" ? language : null,
+        folderId,
+      });
+      setTitle(saved.title);
+      setDirty(false);
+      setMessage("Title saved");
+      await loadItems({ keepSelection: true });
+    } catch (error) {
+      setDirty(true);
+      setMessage(error instanceof Error ? error.message : "Could not rename this item.");
+    } finally {
+      setBusy(false);
     }
   }
 
-  const markdownHtml = useMemo(() => DOMPurify.sanitize(marked.parse(content) as string), [content]);
+  const [markdownHtml, setMarkdownHtml] = useState("");
+  useEffect(() => {
+    setMarkdownHtml(DOMPurify.sanitize(marked.parse(content) as string));
+  }, [content]);
   const filteredItems = items;
   const folderChildren = (parentId: string | null) => folders.filter((folder) => folder.parentId === parentId);
   const itemsInFolder = (id: string | null) => items.filter((item) => item.folderId === id);
@@ -338,7 +359,7 @@ export function NotesWorkspace({
           <button onClick={() => setExpanded((current) => isExpanded ? current.filter((id) => id !== folder.id) : [...current, folder.id])} className="rounded p-1 text-muted hover:text-text" aria-label={isExpanded ? "Collapse folder" : "Expand folder"}>
             {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
-          <button onClick={() => { setActiveView({ type: "folder", folderId: folder.id }); setSelectedId(null); }} className="flex min-w-0 flex-1 items-center gap-2 py-1.5 text-left">
+          <button onClick={async () => { if (!await confirmDiscard()) return; setDirty(false); setActiveView({ type: "folder", folderId: folder.id }); setSelectedId(null); }} className="flex min-w-0 flex-1 items-center gap-2 py-1.5 text-left">
             <Folder size={15} className="shrink-0 text-brand" />
             <span className="truncate text-xs text-soft">{folder.name}</span>
             <span className="ml-auto text-[10px] text-muted">{docs.length}</span>
@@ -382,8 +403,8 @@ export function NotesWorkspace({
           </div>
 
           <div className="shrink-0 space-y-0.5 border-b border-border px-2 py-2">
-            <button onClick={() => { setActiveView({ type: "recent" }); setSelectedId(null); }} className={"flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs " + (activeView.type === "recent" ? "bg-hover text-text" : "text-soft hover:bg-hover")}><Clock3 size={15} /> Recent</button>
-            <button onClick={() => { setActiveView({ type: "favorites" }); setSelectedId(null); }} className={"flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs " + (activeView.type === "favorites" ? "bg-hover text-text" : "text-soft hover:bg-hover")}><Star size={15} /> Favorites</button>
+            <button onClick={async () => { if (!await confirmDiscard()) return; setDirty(false); setActiveView({ type: "recent" }); setSelectedId(null); }} className={"flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs " + (activeView.type === "recent" ? "bg-hover text-text" : "text-soft hover:bg-hover")}><Clock3 size={15} /> Recent</button>
+            <button onClick={async () => { if (!await confirmDiscard()) return; setDirty(false); setActiveView({ type: "favorites" }); setSelectedId(null); }} className={"flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs " + (activeView.type === "favorites" ? "bg-hover text-text" : "text-soft hover:bg-hover")}><Star size={15} /> Favorites</button>
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col">
@@ -425,7 +446,7 @@ export function NotesWorkspace({
               {kind === "snippet" && <select value={language} onChange={(event) => { setLanguage(event.target.value); setDirty(true); }} className="h-8 max-w-32 rounded-md border border-border bg-bg px-2 text-xs text-soft outline-none focus:border-brand"><option value="javascript">JavaScript</option><option value="typescript">TypeScript</option><option value="jsx">JSX</option><option value="tsx">TSX</option><option value="python">Python</option><option value="html">HTML</option><option value="css">CSS</option><option value="sql">SQL</option><option value="bash">Bash</option><option value="json">JSON</option><option value="text">Plain text</option></select>}
               <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border bg-bg-alt p-1">
                 <button onClick={() => setEditing((value) => !value)} className={"rounded-md p-2 transition-colors hover:bg-hover " + (editing ? "text-brand" : "text-muted hover:text-text")} title={editing ? "Preview" : "Edit"} aria-label={editing ? "Preview" : "Edit"}><Pencil size={15} /></button>
-                {kind === "snippet" && <button onClick={() => void navigator.clipboard.writeText(content).then(() => setMessage("Copied to clipboard")).catch(() => setMessage("Clipboard access was denied."))} className="rounded-md p-2 text-muted transition-colors hover:bg-hover hover:text-text" title="Copy code" aria-label="Copy code"><Copy size={15} /></button>}
+                <button onClick={() => void navigator.clipboard.writeText(content).then(() => setMessage("Copied to clipboard")).catch(() => setMessage("Clipboard access was denied."))} className="rounded-md p-2 text-muted transition-colors hover:bg-hover hover:text-text" title="Copy" aria-label="Copy"><Copy size={15} /></button>
                 <button onClick={() => void removeItem(selectedId!)} className="rounded-md p-2 text-muted transition-colors hover:bg-hover hover:text-error" title="Delete" aria-label="Delete"><Trash2 size={15} /></button>
               </div>
             </div>
