@@ -40,6 +40,9 @@ function initializeDatabase(userDataPath) {
     CREATE INDEX IF NOT EXISTS idx_notes_kind ON notes(kind, updated_at DESC);
   `);
 
+  database.exec(`
+  `);
+
   const columns = database.prepare("PRAGMA table_info(notes)").all().map((column) => column.name);
   if (!columns.includes("folder_id")) {
     database.exec("ALTER TABLE notes ADD COLUMN folder_id TEXT REFERENCES folders(id) ON DELETE SET NULL");
@@ -72,6 +75,7 @@ function createFolder(name, parentId = null) {
   if (!clean || clean.length > 80) throw new Error("Folder name must be between 1 and 80 characters.");
   if (/[\\/\\\\\u0000-\u001F]/.test(clean) || clean === "." || clean === "..") throw new Error("Folder name contains invalid characters.");
   if (parentId && !db().prepare("SELECT id FROM folders WHERE id = ?").get(parentId)) throw new Error("Parent folder not found.");
+  if (db().prepare("SELECT id FROM folders WHERE parent_id IS ? AND name = ? COLLATE NOCASE").get(parentId, clean)) throw new Error("A folder with this name already exists here.");
   const id = randomUUID();
   db().prepare("INSERT INTO folders (id, name, parent_id, created_at) VALUES (?, ?, ?, ?)")
     .run(id, clean, parentId, new Date().toISOString());
@@ -81,6 +85,9 @@ function createFolder(name, parentId = null) {
 function renameFolder(id, name) {
   const clean = typeof name === "string" ? name.trim() : "";
   if (!clean || clean.length > 80 || /[\\/\\\\\u0000-\u001F]/.test(clean)) throw new Error("Enter a valid folder name.");
+  const current = db().prepare("SELECT parent_id FROM folders WHERE id = ?").get(id);
+  if (!current) throw new Error("Folder not found.");
+  if (db().prepare("SELECT id FROM folders WHERE parent_id IS ? AND name = ? COLLATE NOCASE AND id != ?").get(current.parent_id, clean, id)) throw new Error("A folder with this name already exists here.");
   const result = db().prepare("UPDATE folders SET name = ? WHERE id = ?").run(clean, id);
   if (!result.changes) throw new Error("Folder not found.");
   return mapFolder(db().prepare("SELECT * FROM folders WHERE id = ?").get(id));
