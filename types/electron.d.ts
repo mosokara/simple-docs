@@ -1,4 +1,5 @@
 import type { DocFolder, FilePayload, SearchResult } from "./docs";
+import type { LibraryNote, SaveLibraryItemInput } from "./library";
 
 declare global {
   interface Window {
@@ -19,6 +20,11 @@ declare global {
       openExternalUrl(url: string): Promise<{ ok: boolean; message?: string }>;
       exportZip(): Promise<{ ok: boolean; path?: string; canceled?: boolean; message?: string }>;
       setSelectedFile(relativePath: string | null): Promise<void>;
+      listLibraryItems(options?: { query?: string; kind?: "all" | "note" | "snippet"; favoritesOnly?: boolean }): Promise<LibraryNote[]>;
+      openLibraryItem(id: string): Promise<LibraryNote>;
+      saveLibraryItem(input: SaveLibraryItemInput): Promise<LibraryNote>;
+      deleteLibraryItem(id: string): Promise<boolean>;
+      setLibraryFavorite(id: string, favorite: boolean): Promise<LibraryNote>;
       onFolderChanged(callback: () => void): () => void;
       onExportProgress(callback: (payload: {
         status: "preparing" | "compressing" | "complete" | "error";
