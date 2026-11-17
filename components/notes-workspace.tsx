@@ -39,7 +39,13 @@ export function NotesWorkspace({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<ActiveView>({ type: "recent" });
   const [expanded, setExpanded] = useState<string[]>([]);
-  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [width, setWidth] = useState(() => {
+    if (typeof window === "undefined") return DEFAULT_WIDTH;
+    try {
+      const saved = Number(localStorage.getItem("simple-docs-sidebar-width"));
+      return Number.isFinite(saved) && saved >= MIN_WIDTH && saved <= MAX_WIDTH ? saved : DEFAULT_WIDTH;
+    } catch { return DEFAULT_WIDTH; }
+  });
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [kind, setKind] = useState<LibraryItemKind>("note");
@@ -97,13 +103,6 @@ export function NotesWorkspace({
   // Query and view changes intentionally reload the list without replacing the open editor.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, activeView.type, activeView.folderId]);
-
-  useEffect(() => {
-    try {
-      const saved = Number(localStorage.getItem("simple-docs-sidebar-width"));
-      if (Number.isFinite(saved) && saved >= MIN_WIDTH && saved <= MAX_WIDTH) setWidth(saved);
-    } catch {}
-  }, []);
 
   useEffect(() => {
     function onMove(event: PointerEvent) {
@@ -335,10 +334,9 @@ export function NotesWorkspace({
     }
   }
 
-  const [markdownHtml, setMarkdownHtml] = useState("");
-  useEffect(() => {
-    setMarkdownHtml(DOMPurify.sanitize(marked.parse(content) as string));
-  }, [content]);
+  const markdownHtml = typeof window === "undefined"
+    ? ""
+    : DOMPurify.sanitize(marked.parse(content) as string);
   const filteredItems = items;
   const folderChildren = (parentId: string | null) => folders.filter((folder) => folder.parentId === parentId);
   const itemsInFolder = (id: string | null) => items.filter((item) => item.folderId === id);
