@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   Code2, Copy, FileText, Folder, FolderPlus, Heart, ChevronRight, ChevronDown,
-  Plus, Search, Pencil, Trash2, MoreHorizontal, FilePlus2, Clock3, Star, X,
+  Plus, Search, Pencil, Eye, Trash2, MoreHorizontal, FilePlus2, Clock3, Star, X,
 } from "lucide-react";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
@@ -285,7 +285,10 @@ export function NotesWorkspace({
     event.preventDefault();
     try {
       if (folderEditor?.id) await desktop.renameFolder(folderEditor.id, folderNameDraft);
-      else await desktop.createFolder(folderNameDraft, folderEditor?.parentId ?? null);
+      else {
+        const created = await desktop.createFolder(folderNameDraft, folderEditor?.parentId ?? null);
+        if (created.parentId) setExpanded((current) => current.includes(created.parentId!) ? current : [...current, created.parentId!]);
+      }
       setFolderEditor(null);
       await loadFolders();
     } catch (error) {
@@ -449,7 +452,7 @@ export function NotesWorkspace({
               </div>
               {kind === "snippet" && <select value={language} onChange={(event) => { setLanguage(event.target.value); setDirty(true); }} className="h-8 max-w-32 rounded-md border border-border bg-bg px-2 text-xs text-soft outline-none focus:border-brand"><option value="javascript">JavaScript</option><option value="typescript">TypeScript</option><option value="jsx">JSX</option><option value="tsx">TSX</option><option value="python">Python</option><option value="html">HTML</option><option value="css">CSS</option><option value="sql">SQL</option><option value="bash">Bash</option><option value="json">JSON</option><option value="text">Plain text</option></select>}
               <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border bg-bg-alt p-1">
-                <button onClick={() => setEditing((value) => !value)} className={"rounded-md p-2 transition-colors hover:bg-hover " + (editing ? "text-brand" : "text-muted hover:text-text")} title={editing ? "Preview" : "Edit"} aria-label={editing ? "Preview" : "Edit"}><Pencil size={15} /></button>
+                <button onClick={() => setEditing((value) => !value)} className={"rounded-md p-2 transition-colors hover:bg-hover " + (editing ? "text-brand" : "text-muted hover:text-text")} title={editing ? "Preview" : "Edit"} aria-label={editing ? "Preview" : "Edit"}>{editing ? <Eye size={15} /> : <Pencil size={15} />}</button>
                 <button onClick={() => void navigator.clipboard.writeText(content).then(() => setMessage("Copied to clipboard")).catch(() => setMessage("Clipboard access was denied."))} className="rounded-md p-2 text-muted transition-colors hover:bg-hover hover:text-text" title="Copy" aria-label="Copy"><Copy size={15} /></button>
                 <button onClick={() => void removeItem(selectedId!)} className="rounded-md p-2 text-muted transition-colors hover:bg-hover hover:text-error" title="Delete" aria-label="Delete"><Trash2 size={15} /></button>
               </div>
