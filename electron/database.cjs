@@ -87,7 +87,7 @@ function mapNote(row) {
   };
 }
 
-function listNotes({ query = "", kind = "all", favoritesOnly = false } = {}) {
+function listNotes({ query = "", kind = "all", favoritesOnly = false, recentOnly = false } = {}) {
   const conditions = [];
   const params = [];
 
