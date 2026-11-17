@@ -1,8 +1,8 @@
 # Simple Docs
 
-Simple Docs is a local-first Windows desktop app for reading, organizing, and working with documentation stored in real folders on your computer.
+Simple Docs is a local-first Windows desktop app for managing personal notes and reusable code snippets, while keeping its original local-folder document explorer.
 
-Your files stay where they are. Simple Docs reads the selected folder directly instead of copying documents into an application database.
+The Library stores notes and snippets in a private SQLite database inside the app's user-data directory. The Files workspace continues to read real folders directly without moving or copying their contents.
 
 ## Latest status
 
@@ -13,6 +13,10 @@ Download the stable Windows release from the repository Releases page.
 
 ## Features
 
+- Create and edit personal notes in the local Library.
+- Save reusable code snippets with a language label.
+- Search notes and snippets, filter by type or favorites, and mark favorites.
+- Store Library data locally in SQLite, separate from the folders opened in Files.
 - Open any local folder.
 - Browse nested directories in an Explorer-style tree.
 - Create a new folder or file directly from the Explorer.
@@ -120,13 +124,13 @@ Heading IDs are stable. Relative links are resolved from the current Markdown do
 ~~~text
 Next.js + React
       ↓
-preload.cjs
+preload.cjs (restricted contextBridge)
       ↓
 IPC
       ↓
 main.cjs
-      ↓
-filesystem / dialogs / VS Code / Explorer / watcher / ZIP / updater
+  ├─ SQLite library (notes + snippets)
+  └─ filesystem / dialogs / VS Code / Explorer / watcher / ZIP / updater
 ~~~
 
 The renderer does not receive unrestricted Node.js filesystem access. Desktop operations are exposed through the preload bridge and handled by Electron's main process.
@@ -160,6 +164,7 @@ components/
   production.md
 
 electron/
+  database.cjs
   main.cjs
   preload.cjs
 
@@ -168,6 +173,7 @@ lib/
 
 types/
   docs.ts
+  library.ts
   electron.d.ts
   file-type.ts
 
@@ -193,7 +199,7 @@ npm run lint
 npm run dist
 ~~~
 
-The dist command creates the Windows installer and ZIP archive locally.
+The dist command creates the Windows installer and ZIP archive locally. The current ZIP export in Files backs up the selected folder only; Library database backup/restore and legacy-file migration are not implemented yet.
 
 ## Releases
 
