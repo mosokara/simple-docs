@@ -20,7 +20,7 @@ declare global {
       openExternalUrl(url: string): Promise<{ ok: boolean; message?: string }>;
       exportZip(): Promise<{ ok: boolean; path?: string; canceled?: boolean; message?: string }>;
       setSelectedFile(relativePath: string | null): Promise<void>;
-      listLibraryItems(options?: { query?: string; kind?: "all" | "note" | "snippet"; favoritesOnly?: boolean }): Promise<LibraryNote[]>;
+      listLibraryItems(options?: { query?: string; kind?: "all" | "note" | "snippet"; favoritesOnly?: boolean; recentOnly?: boolean }): Promise<LibraryNote[]>;
       openLibraryItem(id: string): Promise<LibraryNote>;
       saveLibraryItem(input: SaveLibraryItemInput): Promise<LibraryNote>;
       deleteLibraryItem(id: string): Promise<boolean>;
