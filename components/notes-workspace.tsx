@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Code2, FilePlus2, FileText, Heart, Plus, Search, Trash2 } from "lucide-react";
+import { Code2, Copy, FilePlus2, FileText, Heart, Plus, Search, Trash2 } from "lucide-react";
+import { CodeViewer } from "./code-viewer";
 import { desktop } from "@/lib/desktop-api";
 import type { LibraryItemKind, LibraryNote } from "@/types/library";
+
+const LANGUAGE_EXTENSIONS: Record<string, string> = { javascript: "js", typescript: "ts", jsx: "jsx", tsx: "tsx", python: "py", html: "html", css: "css", sql: "sql", bash: "sh", json: "json", text: "txt" };
 
 const dateLabel = (value: string) => new Intl.DateTimeFormat(undefined, {
   month: "short",
@@ -19,6 +22,7 @@ export function NotesWorkspace() {
   const [content, setContent] = useState("");
   const [kind, setKind] = useState<LibraryItemKind>("note");
   const [language, setLanguage] = useState("javascript");
+  const [snippetPreview, setSnippetPreview] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -106,7 +110,7 @@ export function NotesWorkspace() {
     }
   }
 
-  async function remove() {
+  async function copyCode() {\n    try {\n      await navigator.clipboard.writeText(content);\n      setMessage("Copied to clipboard");\n    } catch {\n      setMessage("Clipboard access was denied.");\n    }\n  }\n\n  async function remove() {
     if (!selectedId || !window.confirm("Delete this item permanently?")) return;
     await desktop.deleteLibraryItem(selectedId);
     setSelectedId(null);
@@ -177,14 +181,31 @@ export function NotesWorkspace() {
               <div className="min-w-0 flex-1">
                 <input value={title} onChange={(event) => { setTitle(event.target.value); setDirty(true); }} placeholder="Untitled" className="w-full bg-transparent text-sm font-semibold outline-none placeholder:text-muted" />
               </div>
-              {kind === "snippet" && <select value={language} onChange={(event) => { setLanguage(event.target.value); setDirty(true); }} className="h-8 border border-border bg-bg px-2 text-xs text-soft outline-none"><option value="javascript">JavaScript</option><option value="typescript">TypeScript</option><option value="jsx">JSX</option><option value="tsx">TSX</option><option value="python">Python</option><option value="html">HTML</option><option value="css">CSS</option><option value="sql">SQL</option><option value="bash">Bash</option><option value="json">JSON</option><option value="text">Plain text</option></select>}
+              {kind === "snippet" && (
+                <>
+                  <select value={language} onChange={(event) => { setLanguage(event.target.value); setDirty(true); }} className="h-8 border border-border bg-bg px-2 text-xs text-soft outline-none"><option value="javascript">JavaScript</option><option value="typescript">TypeScript</option><option value="jsx">JSX</option><option value="tsx">TSX</option><option value="python">Python</option><option value="html">HTML</option><option value="css">CSS</option><option value="sql">SQL</option><option value="bash">Bash</option><option value="json">JSON</option><option value="text">Plain text</option></select>
+                  <button onClick={() => void copyCode()} className="rounded-md p-2 text-muted hover:bg-hover hover:text-text" title="Copy code"><Copy size={15} /></button>
+                </>
+              )}
               <button onClick={() => void save()} disabled={!dirty || busy} className="rounded-md bg-brand px-3 py-2 text-xs font-semibold text-black hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">{busy ? "Saving…" : "Save"}</button>
               {selectedId && <button onClick={() => void remove()} className="rounded-md p-2 text-muted hover:bg-hover hover:text-error" title="Delete item"><Trash2 size={15} /></button>}
             </div>
             {kind === "snippet" ? (
               <div className="flex min-h-0 flex-1 flex-col p-5">
-                <div className="mb-2 text-[11px] text-muted">CODE SNIPPET · {language.toUpperCase()}</div>
-                <textarea value={content} onChange={(event) => { setContent(event.target.value); setDirty(true); }} spellCheck={false} className="docs-scroll min-h-0 flex-1 resize-none rounded-lg border border-border bg-code-bg p-4 font-mono text-[13px] leading-6 text-code-foreground outline-none focus:border-brand" placeholder="// Paste or write your code here…" />
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-[11px] text-muted">CODE SNIPPET · {language.toUpperCase()}</div>
+                  <div className="flex gap-1 rounded-md border border-border p-1">
+                    <button onClick={() => setSnippetPreview(false)} className={"rounded px-2.5 py-1 text-[11px] " + (!snippetPreview ? "bg-hover text-text" : "text-muted")}>Edit</button>
+                    <button onClick={() => setSnippetPreview(true)} className={"rounded px-2.5 py-1 text-[11px] " + (snippetPreview ? "bg-hover text-text" : "text-muted")}>Preview</button>
+                  </div>
+                </div>
+                {snippetPreview ? (
+                  <div className="docs-scroll min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-code-bg p-4">
+                    <CodeViewer code={content} fileName={"snippet." + (LANGUAGE_EXTENSIONS[language] ?? "txt")} />
+                  </div>
+                ) : (
+                  <textarea value={content} onChange={(event) => { setContent(event.target.value); setDirty(true); }} spellCheck={false} className="docs-scroll min-h-0 flex-1 resize-none rounded-lg border border-border bg-code-bg p-4 font-mono text-[13px] leading-6 text-code-foreground outline-none focus:border-brand" placeholder="// Paste or write your code here…" />
+                )}
               </div>
             ) : (
               <textarea value={content} onChange={(event) => { setContent(event.target.value); setDirty(true); }} className="docs-scroll min-h-0 flex-1 resize-none bg-transparent p-6 text-sm leading-7 text-soft outline-none" placeholder="Start writing your note…" />
