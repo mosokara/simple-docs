@@ -1,35 +1,14 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("simpleDocs", {
-  getState: () => ipcRenderer.invoke("state:get"),
-  openFolder: () => ipcRenderer.invoke("folder:open"),
-  createFolder: (relativeParent, name) => ipcRenderer.invoke("folder:create", relativeParent, name),
-  createFile: (relativeParent, name) => ipcRenderer.invoke("file:create", relativeParent, name),
-  deleteItem: (relativePath) => ipcRenderer.invoke("item:delete", relativePath),
-  openRootInExplorer: () => ipcRenderer.invoke("root:openInExplorer"),
-  scan: () => ipcRenderer.invoke("folder:scan"),
-  readFile: (relativePath) => ipcRenderer.invoke("file:read", relativePath),
-  search: (query) => ipcRenderer.invoke("file:search", query),
-  openInEditor: (relativePath) => ipcRenderer.invoke("file:edit", relativePath),
-  revealInExplorer: (relativePath) => ipcRenderer.invoke("file:reveal", relativePath),
-  revealExport: (absolutePath) => ipcRenderer.invoke("export:reveal", absolutePath),
-  openDefault: (relativePath) => ipcRenderer.invoke("file:openDefault", relativePath),
-  openExternalUrl: (url) => ipcRenderer.invoke("shell:openExternal", url),
-  exportZip: () => ipcRenderer.invoke("folder:export"),
-  setSelectedFile: (relativePath) => ipcRenderer.invoke("state:selected", relativePath),
   listLibraryItems: (options) => ipcRenderer.invoke("library:list", options),
   openLibraryItem: (id) => ipcRenderer.invoke("library:open", id),
   saveLibraryItem: (input) => ipcRenderer.invoke("library:save", input),
   deleteLibraryItem: (id) => ipcRenderer.invoke("library:delete", id),
   setLibraryFavorite: (id, favorite) => ipcRenderer.invoke("library:favorite", id, favorite),
-  onFolderChanged: (callback) => {
-    const listener = () => callback();
-    ipcRenderer.on("folder:changed", listener);
-    return () => ipcRenderer.removeListener("folder:changed", listener);
-  },
-  onExportProgress: (callback) => {
-    const listener = (_event, payload) => callback(payload);
-    ipcRenderer.on("export:progress", listener);
-    return () => ipcRenderer.removeListener("export:progress", listener);
-  },
+  listFolders: () => ipcRenderer.invoke("library:folders:list"),
+  createFolder: (name, parentId) => ipcRenderer.invoke("library:folders:create", name, parentId),
+  renameFolder: (id, name) => ipcRenderer.invoke("library:folders:rename", id, name),
+  deleteFolder: (id) => ipcRenderer.invoke("library:folders:delete", id),
+  openExternalUrl: (url) => ipcRenderer.invoke("shell:openExternal", url),
 });
