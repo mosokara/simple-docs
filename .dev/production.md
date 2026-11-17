@@ -7,50 +7,25 @@ npm run build
 npm run dist
 ```
 
-The distribution step creates the Windows installer and ZIP artifact.
+The distribution step creates the Windows x64 installer and ZIP artifact.
 
 ## Release prerequisites
 
-Before tagging:
-- typecheck passes
-- lint passes
-- build passes
+- typecheck, lint, and tests pass
+- Next.js build passes
 - packaged installer is installed and tested
-- filesystem create/delete flows are tested
-- updater configuration is unchanged or intentionally reviewed
+- SQLite opens and upgrades a copy of a schema-v1 database
+- note/code CRUD, nested folders, keyboard save, and unsaved-change warning are tested
+- updater configuration is reviewed
 
-## Git release flow
+## Release flow
 
 ```text
-feature branch
-  ↓
-checks + package test
-  ↓
-PR review
-  ↓
-merge main
-  ↓
-update package.json version
-  ↓
-git tag vX.Y.Z
-  ↓
-git push origin vX.Y.Z
-  ↓
-GitHub Actions
-  ↓
-GitHub Release
+feature branch → checks → PR review → merge main → version bump → tag → GitHub Release
 ```
 
-For the current feature branch, do not tag v1.1.0 until the PR is merged and the installer test is complete.
+Do not publish v2 until the packaged Windows application has been tested against an existing user-data database.
 
-## Packaging
+## Packaging and updates
 
-electron-builder is configured for Windows x64 NSIS + ZIP. The application icon comes from `build/icon.ico`.
-
-## Updates
-
-Packaged builds use `electron-updater` with GitHub Releases. Releases are expected to expose the artifacts required by the updater.
-
-## Signing
-
-The current configuration is unsigned. Code signing can be added later without changing the renderer architecture.
+electron-builder creates Windows x64 NSIS + ZIP artifacts. Packaged builds use electron-updater with GitHub Releases. The current build is unsigned.
