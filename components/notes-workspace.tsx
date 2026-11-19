@@ -297,7 +297,7 @@ export function NotesWorkspace({
       setTitle(opened.title);
       setContent(opened.content);
       setKind(opened.kind);
-      setLanguage(opened.kind === "snippet" ? languageForFile(opened.title) : "text");
+      setLanguage(opened.kind === "snippet" ? (/\.[a-z0-9]+$/i.test(opened.title) ? languageForFile(opened.title) : opened.language ?? "javascript") : "text");
       setFolderId(opened.folderId);
       setEditing(false);
       setDirty(false);
@@ -358,7 +358,7 @@ export function NotesWorkspace({
     setBusy(true);
     setMessage("");
     try {
-      const nextLanguage = kind === "snippet" ? languageForFile(cleanTitle) : null;
+      const nextLanguage = kind === "snippet" ? (/\.[a-z0-9]+$/i.test(cleanTitle) ? languageForFile(cleanTitle) : language) : null;
       const saved = await desktop.saveLibraryItem({
         id: selectedId ?? undefined,
         title: cleanTitle,
@@ -487,7 +487,7 @@ export function NotesWorkspace({
     setBusy(true);
     setMessage("");
     try {
-      const nextLanguage = kind === "snippet" ? languageForFile(nextTitle) : null;
+      const nextLanguage = kind === "snippet" ? (/\.[a-z0-9]+$/i.test(nextTitle) ? languageForFile(nextTitle) : language) : null;
       const saved = await desktop.saveLibraryItem({
         id: selectedId,
         title: nextTitle,
@@ -784,7 +784,7 @@ export function NotesWorkspace({
                 )
               ) : kind === "snippet" ? (
                 <div className="docs-scroll h-full overflow-auto border border-border bg-code-bg p-4">
-                  <CodeViewer code={content} fileName={title} />
+                  <CodeViewer code={content} fileName={title} language={language} />
                 </div>
               ) : (
                 <article className="markdown docs-scroll h-full overflow-auto px-2 py-1" dangerouslySetInnerHTML={{ __html: markdownHtml }} />
@@ -817,6 +817,7 @@ export function NotesWorkspace({
               <div className="flex shrink-0 items-center gap-2">
                 {activeView.type === "folder" && !query.trim() && (
                   <>
+                    <button type="button" onClick={() => startFolderEditor(undefined, activeView.folderId ?? null)} className="flex h-8 items-center gap-2 border border-border px-3 text-xs text-soft hover:bg-hover"><FolderPlus size={14} /> New Folder</button>
                     <button type="button" onClick={() => void startNew("note", activeView.folderId ?? null)} className="flex h-8 items-center gap-2 border border-border px-3 text-xs text-soft hover:bg-hover"><FilePlus2 size={14} /> New Note</button>
                     <button type="button" onClick={() => void startNew("snippet", activeView.folderId ?? null)} className="flex h-8 items-center gap-2 border border-border px-3 text-xs text-soft hover:bg-hover"><Code2 size={14} /> New Code</button>
                   </>

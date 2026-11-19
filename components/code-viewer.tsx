@@ -4,17 +4,28 @@ import DOMPurify from "dompurify";
 import { useEffect, useState } from "react";
 import type { BundledLanguage } from "shiki";
 
-export function CodeViewer({ code, fileName }: { code: string; fileName: string }) {
+export function CodeViewer({
+  code,
+  fileName,
+  language,
+}: {
+  code: string;
+  fileName: string;
+  language?: string;
+}) {
   const [html, setHtml] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     async function highlight() {
       const { codeToHtml } = await import("shiki");
-      const language = fileName.split(".").pop()?.toLowerCase() || "text";
+      const inferredLanguage = language ?? fileName.split(".").pop()?.toLowerCase() ?? "text";
       let result: string;
       try {
-        result = await codeToHtml(code, { lang: language as BundledLanguage, theme: "dark-plus" });
+        result = await codeToHtml(code, {
+          lang: inferredLanguage as BundledLanguage,
+          theme: "dark-plus",
+        });
       } catch {
         result = await codeToHtml(code, { lang: "text", theme: "dark-plus" });
       }
@@ -22,7 +33,7 @@ export function CodeViewer({ code, fileName }: { code: string; fileName: string 
     }
     void highlight();
     return () => { active = false; };
-  }, [code, fileName]);
+  }, [code, fileName, language]);
 
   if (!html) return <pre className="code-viewer min-h-full">{code}</pre>;
   return <div className="code-viewer code-viewer-highlighted min-h-full" dangerouslySetInnerHTML={{ __html: html }} />;
