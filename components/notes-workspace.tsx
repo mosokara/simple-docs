@@ -51,7 +51,7 @@ function formatDate(value: string) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "Unknown date"
-    : new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(date);
+    : new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(date);
 }
 
 function readDragPayload(event: React.DragEvent): DragPayload | null {
@@ -94,6 +94,7 @@ export function NotesWorkspace({
   const [menu, setMenu] = useState<MenuState>(null);
   const [folderEditor, setFolderEditor] = useState<{ id?: string; parentId?: string | null } | null>(null);
   const [folderNameDraft, setFolderNameDraft] = useState("");
+  const [folderDialogError, setFolderDialogError] = useState("");
   const [newItem, setNewItem] = useState<NewItemState>(null);
   const [newItemName, setNewItemName] = useState("");
   const [dialogError, setDialogError] = useState("");
@@ -423,13 +424,14 @@ export function NotesWorkspace({
     setMenu(null);
     setFolderEditor(folder ? { id: folder.id } : { parentId });
     setFolderNameDraft(folder?.name ?? "");
+    setFolderDialogError("");
     setMessage("");
   }
 
   async function submitFolder(event: React.FormEvent) {
     event.preventDefault();
     if (!folderNameDraft.trim()) {
-      setMessage("A folder name is required.");
+      setFolderDialogError("A folder name is required.");
       return;
     }
     try {
@@ -443,10 +445,11 @@ export function NotesWorkspace({
       }
       setFolderEditor(null);
       setFolderNameDraft("");
+      setFolderDialogError("");
       await refreshData();
       setMessage("Folder saved");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not save folder.");
+      setFolderDialogError(error instanceof Error ? error.message : "Could not save folder.");
     }
   }
 
@@ -861,6 +864,7 @@ export function NotesWorkspace({
           <form onSubmit={(event) => void submitFolder(event)} className="w-full max-w-sm border border-border bg-bg p-5 shadow-2xl">
             <h3 className="text-sm font-semibold">{folderEditor.id ? "Rename folder" : folderEditor.parentId ? "New folder" : "New root folder"}</h3>
             <input autoFocus value={folderNameDraft} onChange={(event) => setFolderNameDraft(event.target.value)} placeholder="Folder name" className="mt-4 h-10 w-full border border-border bg-bg-alt px-3 text-sm outline-none focus:border-brand" />
+            {folderDialogError && <p className="mt-2 text-xs text-error">{folderDialogError}</p>}
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" onClick={() => setFolderEditor(null)} className="h-9 px-3 text-xs text-muted hover:bg-hover">Cancel</button>
               <button type="submit" className="h-9 bg-brand px-3 text-xs font-medium text-black">Save</button>
