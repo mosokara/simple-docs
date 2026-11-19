@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   Code2, Copy, FileText, Folder, FolderPlus, Heart, ChevronRight, ChevronDown,
   Plus, Search, Pencil, Eye, Trash2, MoreHorizontal, FilePlus2, Clock3, Star, X,
@@ -97,13 +97,13 @@ export function NotesWorkspace({
   const [newItem, setNewItem] = useState<NewItemState>(null);
   const [newItemName, setNewItemName] = useState("");
   const [dialogError, setDialogError] = useState("");
-  const [mounted, setMounted] = useState(false);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const newItemInputRef = useRef<HTMLInputElement>(null);
   const cancelTitleEditRef = useRef(false);
   const resizeRef = useRef<{ x: number; width: number } | null>(null);
   const dataRequestRef = useRef(0);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const refreshData = useCallback(async () => {
     const requestId = ++dataRequestRef.current;
@@ -117,7 +117,6 @@ export function NotesWorkspace({
   }, []);
 
   useEffect(() => {
-    setMounted(true);
     void refreshData().catch((error) => {
       setMessage(error instanceof Error ? error.message : "Could not load your library.");
     });
