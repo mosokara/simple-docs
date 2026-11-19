@@ -6,11 +6,13 @@ declare global {
       listLibraryItems(options?: { query?: string; kind?: "all" | "note" | "snippet"; favoritesOnly?: boolean; recentOnly?: boolean; folderId?: string | null }): Promise<LibraryNote[]>;
       openLibraryItem(id: string): Promise<LibraryNote>;
       saveLibraryItem(input: SaveLibraryItemInput): Promise<LibraryNote>;
+      moveLibraryItem(id: string, folderId: string | null): Promise<LibraryNote>;
       deleteLibraryItem(id: string): Promise<boolean>;
       setLibraryFavorite(id: string, favorite: boolean): Promise<LibraryNote>;
       listFolders(): Promise<LibraryFolder[]>;
       createFolder(name: string, parentId?: string | null): Promise<LibraryFolder>;
       renameFolder(id: string, name: string): Promise<LibraryFolder>;
+      moveFolder(id: string, parentId: string | null): Promise<LibraryFolder>;
       deleteFolder(id: string): Promise<boolean>;
       openExternalUrl(url: string): Promise<{ ok: boolean }>;
     };

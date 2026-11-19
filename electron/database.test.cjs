@@ -65,6 +65,21 @@ test("rejects empty titles and non-text content", () => {
   assert.throws(() => library.saveNote({ title: "Valid", content: 42, kind: "note" }), /must be text/i);
 });
 
+test("creates root folders and correctly lists root-level items", () => {
+  const first = library.createFolder("Root One");
+  const second = library.createFolder("Root Two");
+  const rootNote = library.saveNote({ title: "Root note", content: "At root", kind: "note" });
+
+  assert.equal(first.parentId, null);
+  assert.equal(second.parentId, null);
+  assert.equal(library.listNotes({ folderId: null }).some((item) => item.id === rootNote.id), true);
+  assert.equal(library.listNotes({ folderId: first.id }).length, 0);
+  assert.throws(() => library.createFolder("root one"), /already exists/i);
+
+  library.deleteNote(rootNote.id);
+  assert.equal(library.deleteFolder(first.id), true);
+  assert.equal(library.deleteFolder(second.id), true);
+});
 
 test("creates nested folders and assigns notes without deleting contents", () => {
   const parent = library.createFolder("JavaScript");
@@ -91,6 +106,40 @@ test("creates nested folders and assigns notes without deleting contents", () =>
   assert.equal(library.listFolders().length, 0);
 });
 
+test("moves notes and folders safely, rejects cycles, and supports moving back to root", () => {
+  const workspace = library.createFolder("Workspace");
+  const packages = library.createFolder("Packages", workspace.id);
+  const react = library.createFolder("React", packages.id);
+  const archive = library.createFolder("Archive");
+  const item = library.saveNote({
+    title: "App.tsx",
+    content: "export default function App() {}",
+    kind: "snippet",
+    language: "tsx",
+    folderId: react.id,
+  });
+
+  assert.throws(() => library.moveFolder(workspace.id, react.id), /own subfolders/i);
+  assert.throws(() => library.moveFolder(packages.id, packages.id), /itself/i);
+  assert.throws(() => library.moveNote(item.id, "missing-folder"), /target folder/i);
+
+  const movedItem = library.moveNote(item.id, archive.id);
+  assert.equal(movedItem.folderId, archive.id);
+  const movedFolder = library.moveFolder(react.id, archive.id);
+  assert.equal(movedFolder.parentId, archive.id);
+
+  const movedBackToRoot = library.moveFolder(react.id, null);
+  assert.equal(movedBackToRoot.parentId, null);
+  const movedItemBackToRoot = library.moveNote(item.id, null);
+  assert.equal(movedItemBackToRoot.folderId, null);
+  assert.equal(library.listNotes({ folderId: null }).some((entry) => entry.id === item.id), true);
+
+  library.deleteNote(item.id);
+  assert.equal(library.deleteFolder(react.id), true);
+  assert.equal(library.deleteFolder(packages.id), true);
+  assert.equal(library.deleteFolder(workspace.id), true);
+  assert.equal(library.deleteFolder(archive.id), true);
+});
 
 test("migrates schema-v1 notes into the folder-aware schema without data loss", () => {
   library.closeDatabase();

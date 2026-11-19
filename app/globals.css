@@ -32,6 +32,7 @@
   --token-brand: #4ade80;
   --token-brand-strong: #86efac;
   --token-brand-soft: rgba(74, 222, 128, .12);
+  --token-error: #f08080;
   --token-scrollbar: rgba(148, 163, 184, .26);
   --token-code-bg: #0d131a;
   --token-code-foreground: #dbe7f5;
@@ -56,7 +57,10 @@
   --color-code-foreground: var(--token-code-foreground);
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+  border-radius: 0 !important;
+}
 html, body { min-height: 100%; }
 body {
   margin: 0;
@@ -64,7 +68,7 @@ body {
   color: var(--token-text);
   font-family: Arial, Helvetica, sans-serif;
 }
-button, input { font: inherit; }
+button, input, textarea { font: inherit; }
 button:not(:disabled) { cursor: pointer; }
 ::selection { background: color-mix(in srgb, var(--token-brand) 25%, transparent); }
 
@@ -77,19 +81,42 @@ button:not(:disabled) { cursor: pointer; }
   width: 10px;
   height: 10px;
 }
-.docs-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
+.docs-scroll::-webkit-scrollbar-track { background: transparent; }
 .docs-scroll::-webkit-scrollbar-thumb {
   background: var(--token-scrollbar);
   border: 3px solid transparent;
-  border-radius: 999px;
   background-clip: content-box;
 }
 .docs-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--token-muted);
   background-clip: content-box;
 }
+
+.tree-row {
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.tree-row:hover {
+  background-color: color-mix(in srgb, var(--token-brand) 10%, transparent);
+}
+.tree-row-active,
+.tree-row-active:hover {
+  background-color: color-mix(in srgb, var(--token-brand) 15%, transparent);
+}
+.nav-row {
+  color: var(--token-soft);
+  transition: background-color 120ms ease;
+}
+.nav-row:hover {
+  background-color: color-mix(in srgb, var(--token-brand) 10%, transparent);
+}
+.nav-row-active,
+.nav-row-active:hover {
+  color: var(--token-text);
+  background-color: color-mix(in srgb, var(--token-brand) 15%, transparent);
+}
+.main-list-row { cursor: pointer; }
+.main-list-row[draggable="true"] { user-select: none; }
 
 .markdown {
   max-width: 900px;
@@ -132,7 +159,6 @@ button:not(:disabled) { cursor: pointer; }
 .markdown code:not(pre code) {
   background: var(--token-code-bg);
   border: 1px solid var(--token-border);
-  border-radius: 4px;
   padding: .12rem .35rem;
   font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
 }
@@ -141,23 +167,16 @@ button:not(:disabled) { cursor: pointer; }
   margin: 1.25rem 0;
   background: var(--token-code-bg);
   border: 1px solid var(--token-border);
-  border-radius: 7px;
   padding: 1rem;
 }
-.markdown-code-wrapper {
-  position: relative;
-}
-.markdown-code-wrapper pre {
-  padding-top: 2.75rem;
-}
+.markdown-code-wrapper { position: relative; }
+.markdown-code-wrapper pre { padding-top: 2.75rem; }
 .markdown pre code {
   display: block;
   min-width: max-content;
   font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
 }
-.markdown .shiki {
-  background: var(--token-code-bg) !important;
-}
+.markdown .shiki { background: var(--token-code-bg) !important; }
 .markdown-code-toolbar {
   position: absolute;
   inset: .55rem .65rem auto;
@@ -177,7 +196,6 @@ button:not(:disabled) { cursor: pointer; }
   border: 1px solid var(--token-border);
   background: var(--token-bg-alt);
   color: var(--token-soft);
-  border-radius: 4px;
   padding: .25rem .55rem;
   font-size: .72rem;
 }
@@ -198,7 +216,6 @@ button:not(:disabled) { cursor: pointer; }
 .plain-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 .code-viewer { white-space: pre; overflow-wrap: normal; padding-right: 1rem; }
 
-
 .markdown h1[id], .markdown h2[id], .markdown h3[id],
 .markdown h4[id], .markdown h5[id], .markdown h6[id] {
   scroll-margin-top: 1rem;
@@ -208,13 +225,11 @@ button:focus-visible, [role="separator"]:focus-visible {
   outline: 2px solid var(--token-brand);
   outline-offset: 2px;
 }
-
-input:focus-visible {
+input:focus-visible, textarea:focus-visible {
   outline: none;
   box-shadow: none;
   border-color: var(--token-brand);
 }
-
 
 .code-viewer-highlighted {
   min-height: calc(100vh - 120px);
@@ -233,6 +248,4 @@ input:focus-visible {
   padding: 1.25rem 0;
   background: var(--token-code-bg) !important;
 }
-.code-viewer-highlighted .shiki code {
-  font-family: inherit;
-}
+.code-viewer-highlighted .shiki code { font-family: inherit; }

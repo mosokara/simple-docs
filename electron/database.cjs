@@ -63,7 +63,7 @@ function initializeDatabase(userDataPath) {
 }
 
 function mapFolder(row) {
-  return row ? { id: row.id, name: row.name, parentId: row.parent_id, createdAt: row.created_at } : null;
+  return row ? { id: row.id, name: row.name, parentId: row.parent_id ?? null, createdAt: row.created_at } : null;
 }
 
 function listFolders() {
@@ -72,28 +72,63 @@ function listFolders() {
 
 function createFolder(name, parentId = null) {
   const clean = typeof name === "string" ? name.trim() : "";
+  const targetParentId = typeof parentId === "string" && parentId ? parentId : null;
   if (!clean || clean.length > 80) throw new Error("Folder name must be between 1 and 80 characters.");
-  if (/[\\/\\\\\u0000-\u001F]/.test(clean) || clean === "." || clean === "..") throw new Error("Folder name contains invalid characters.");
-  if (parentId && !db().prepare("SELECT id FROM folders WHERE id = ?").get(parentId)) throw new Error("Parent folder not found.");
-  if (db().prepare("SELECT id FROM folders WHERE parent_id IS ? AND name = ? COLLATE NOCASE").get(parentId, clean)) throw new Error("A folder with this name already exists here.");
+  if (/[\\/\\\\\u0000-\u001F]/.test(clean) || clean === "." || clean === "..") {
+    throw new Error("Folder name contains invalid characters.");
+  }
+  if (targetParentId && !db().prepare("SELECT id FROM folders WHERE id = ?").get(targetParentId)) {
+    throw new Error("Parent folder not found.");
+  }
+  if (db().prepare("SELECT id FROM folders WHERE parent_id IS ? AND name = ? COLLATE NOCASE").get(targetParentId, clean)) {
+    throw new Error("A folder with this name already exists here.");
+  }
   const id = randomUUID();
   db().prepare("INSERT INTO folders (id, name, parent_id, created_at) VALUES (?, ?, ?, ?)")
-    .run(id, clean, parentId, new Date().toISOString());
+    .run(id, clean, targetParentId, new Date().toISOString());
   return mapFolder(db().prepare("SELECT * FROM folders WHERE id = ?").get(id));
 }
 
 function renameFolder(id, name) {
   const clean = typeof name === "string" ? name.trim() : "";
-  if (!clean || clean.length > 80 || /[\\/\\\\\u0000-\u001F]/.test(clean)) throw new Error("Enter a valid folder name.");
+  if (!clean || clean.length > 80 || /[\\/\\\\\u0000-\u001F]/.test(clean) || clean === "." || clean === "..") {
+    throw new Error("Enter a valid folder name.");
+  }
   const current = db().prepare("SELECT parent_id FROM folders WHERE id = ?").get(id);
   if (!current) throw new Error("Folder not found.");
-  if (db().prepare("SELECT id FROM folders WHERE parent_id IS ? AND name = ? COLLATE NOCASE AND id != ?").get(current.parent_id, clean, id)) throw new Error("A folder with this name already exists here.");
+  if (db().prepare("SELECT id FROM folders WHERE parent_id IS ? AND name = ? COLLATE NOCASE AND id != ?").get(current.parent_id, clean, id)) {
+    throw new Error("A folder with this name already exists here.");
+  }
   const result = db().prepare("UPDATE folders SET name = ? WHERE id = ?").run(clean, id);
   if (!result.changes) throw new Error("Folder not found.");
   return mapFolder(db().prepare("SELECT * FROM folders WHERE id = ?").get(id));
 }
 
+function moveFolder(id, parentId = null) {
+  const targetParentId = typeof parentId === "string" && parentId ? parentId : null;
+  const current = db().prepare("SELECT id, name FROM folders WHERE id = ?").get(id);
+  if (!current) throw new Error("Folder not found.");
+  if (targetParentId === id) throw new Error("A folder cannot be moved into itself.");
+
+  let ancestorId = targetParentId;
+  while (ancestorId) {
+    if (ancestorId === id) throw new Error("A folder cannot be moved into one of its own subfolders.");
+    const ancestor = db().prepare("SELECT parent_id FROM folders WHERE id = ?").get(ancestorId);
+    if (!ancestor) throw new Error("Target folder not found.");
+    ancestorId = ancestor.parent_id ?? null;
+  }
+
+  if (db().prepare("SELECT id FROM folders WHERE parent_id IS ? AND name = ? COLLATE NOCASE AND id != ?").get(targetParentId, current.name, id)) {
+    throw new Error("A folder with this name already exists in the destination.");
+  }
+
+  db().prepare("UPDATE folders SET parent_id = ? WHERE id = ?").run(targetParentId, id);
+  return mapFolder(db().prepare("SELECT * FROM folders WHERE id = ?").get(id));
+}
+
 function deleteFolder(id) {
+  const folder = db().prepare("SELECT id FROM folders WHERE id = ?").get(id);
+  if (!folder) throw new Error("Folder not found.");
   const hasChildren = db().prepare("SELECT 1 FROM folders WHERE parent_id = ? LIMIT 1").get(id);
   const hasItems = db().prepare("SELECT 1 FROM notes WHERE folder_id = ? LIMIT 1").get(id);
   if (hasChildren || hasItems) throw new Error("Move or delete the folder's contents before deleting it.");
@@ -115,18 +150,27 @@ function listNotes({ query = "", kind = "all", favoritesOnly = false, recentOnly
   const params = [];
   if (kind === "note" || kind === "snippet") { conditions.push("kind = ?"); params.push(kind); }
   if (favoritesOnly) conditions.push("is_favorite = 1");
-  if (folderId !== undefined) { conditions.push("folder_id = ?"); params.push(folderId); }
-  if (query.trim()) {
+  if (folderId === null) {
+    conditions.push("folder_id IS NULL");
+  } else if (typeof folderId === "string") {
+    conditions.push("folder_id = ?");
+    params.push(folderId);
+  }
+  if (typeof query === "string" && query.trim()) {
     conditions.push("(title LIKE ? OR content LIKE ?)");
     const pattern = `%${query.trim()}%`;
     params.push(pattern, pattern);
   }
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-  const order = recentOnly ? "COALESCE(last_opened_at, updated_at) DESC" : "is_favorite DESC, updated_at DESC";
+  const order = recentOnly
+    ? "COALESCE(last_opened_at, updated_at) DESC"
+    : "is_favorite DESC, updated_at DESC";
   return db().prepare(`SELECT * FROM notes ${where} ORDER BY ${order} LIMIT 500`).all(...params).map(mapNote);
 }
 
-function getNote(id) { return mapNote(db().prepare("SELECT * FROM notes WHERE id = ?").get(id)); }
+function getNote(id) {
+  return mapNote(db().prepare("SELECT * FROM notes WHERE id = ?").get(id));
+}
 
 function saveNote(input) {
   const title = typeof input.title === "string" ? input.title.trim() : "";
@@ -136,10 +180,13 @@ function saveNote(input) {
   const kind = input.kind === "snippet" ? "snippet" : "note";
   const language = kind === "snippet" && typeof input.language === "string" ? input.language.slice(0, 40) : null;
   const existing = input.id ? db().prepare("SELECT id, folder_id FROM notes WHERE id = ?").get(input.id) : null;
+  if (input.id && !existing) throw new Error("Library item not found.");
   const folderId = input.folderId === undefined
     ? (existing?.folder_id ?? null)
     : (typeof input.folderId === "string" && input.folderId ? input.folderId : null);
-  if (folderId && !db().prepare("SELECT id FROM folders WHERE id = ?").get(folderId)) throw new Error("Target folder not found.");
+  if (folderId && !db().prepare("SELECT id FROM folders WHERE id = ?").get(folderId)) {
+    throw new Error("Target folder not found.");
+  }
   const now = new Date().toISOString();
   if (existing) {
     db().prepare("UPDATE notes SET title = ?, content = ?, kind = ?, language = ?, folder_id = ?, updated_at = ? WHERE id = ?")
@@ -152,16 +199,36 @@ function saveNote(input) {
   return getNote(id);
 }
 
-function deleteNote(id) { return db().prepare("DELETE FROM notes WHERE id = ?").run(id).changes > 0; }
+function moveNote(id, folderId = null) {
+  const targetFolderId = typeof folderId === "string" && folderId ? folderId : null;
+  const current = db().prepare("SELECT id FROM notes WHERE id = ?").get(id);
+  if (!current) throw new Error("Library item not found.");
+  if (targetFolderId && !db().prepare("SELECT id FROM folders WHERE id = ?").get(targetFolderId)) {
+    throw new Error("Target folder not found.");
+  }
+  db().prepare("UPDATE notes SET folder_id = ?, updated_at = ? WHERE id = ?")
+    .run(targetFolderId, new Date().toISOString(), id);
+  return getNote(id);
+}
+
+function deleteNote(id) {
+  return db().prepare("DELETE FROM notes WHERE id = ?").run(id).changes > 0;
+}
+
 function setFavorite(id, favorite) {
   db().prepare("UPDATE notes SET is_favorite = ?, updated_at = ? WHERE id = ?").run(favorite ? 1 : 0, new Date().toISOString(), id);
   return getNote(id);
 }
+
 function touchNote(id) {
   db().prepare("UPDATE notes SET last_opened_at = ? WHERE id = ?").run(new Date().toISOString(), id);
   return getNote(id);
 }
-function listCategories() { return db().prepare("SELECT id, name, color FROM categories ORDER BY name COLLATE NOCASE").all(); }
+
+function listCategories() {
+  return db().prepare("SELECT id, name, color FROM categories ORDER BY name COLLATE NOCASE").all();
+}
+
 function createCategory(name) {
   const clean = typeof name === "string" ? name.trim() : "";
   if (!clean || clean.length > 40) throw new Error("Category name must be between 1 and 40 characters.");
@@ -169,6 +236,16 @@ function createCategory(name) {
   db().prepare("INSERT INTO categories (id, name, created_at) VALUES (?, ?, ?)").run(id, clean, new Date().toISOString());
   return { id, name: clean };
 }
-function closeDatabase() { if (database) { database.close(); database = null; } }
 
-module.exports = { initializeDatabase, listNotes, getNote, saveNote, deleteNote, setFavorite, touchNote, listCategories, createCategory, listFolders, createFolder, renameFolder, deleteFolder, closeDatabase };
+function closeDatabase() {
+  if (database) {
+    database.close();
+    database = null;
+  }
+}
+
+module.exports = {
+  initializeDatabase, listNotes, getNote, saveNote, moveNote, deleteNote,
+  setFavorite, touchNote, listCategories, createCategory, listFolders,
+  createFolder, renameFolder, moveFolder, deleteFolder, closeDatabase,
+};

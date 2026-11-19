@@ -11,7 +11,6 @@ protocol.registerSchemesAsPrivileged([{
   privileges: { standard: true, secure: true, supportFetchAPI: true },
 }]);
 
-let mainWindow = null;
 const rendererPath = path.join(__dirname, "..", "out");
 
 function registerAppProtocol() {
@@ -35,6 +34,7 @@ function registerIpc() {
     return item;
   });
   ipcMain.handle("library:save", (_event, input) => library.saveNote(input));
+  ipcMain.handle("library:move", (_event, id, folderId) => library.moveNote(id, folderId ?? null));
   ipcMain.handle("library:delete", (_event, id) => library.deleteNote(id));
   ipcMain.handle("library:favorite", (_event, id, favorite) => {
     const item = library.setFavorite(id, favorite);
@@ -44,6 +44,7 @@ function registerIpc() {
   ipcMain.handle("library:folders:list", () => library.listFolders());
   ipcMain.handle("library:folders:create", (_event, name, parentId) => library.createFolder(name, parentId ?? null));
   ipcMain.handle("library:folders:rename", (_event, id, name) => library.renameFolder(id, name));
+  ipcMain.handle("library:folders:move", (_event, id, parentId) => library.moveFolder(id, parentId ?? null));
   ipcMain.handle("library:folders:delete", (_event, id) => library.deleteFolder(id));
   ipcMain.handle("shell:openExternal", async (_event, url) => {
     if (typeof url !== "string") throw new Error("Invalid URL.");
@@ -55,7 +56,7 @@ function registerIpc() {
 }
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  const window = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 900,
@@ -67,13 +68,13 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
-  mainWindow.maximize();
-  if (process.platform === "win32" || process.platform === "linux") mainWindow.removeMenu();
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  window.maximize();
+  if (process.platform === "win32" || process.platform === "linux") window.removeMenu();
+  window.webContents.setWindowOpenHandler(({ url }) => {
     if (/^(https?|mailto):/i.test(url)) void shell.openExternal(url);
     return { action: "deny" };
   });
-  mainWindow.loadURL(app.isPackaged ? "simple-docs://app/" : "http://localhost:3000");
+  window.loadURL(app.isPackaged ? "simple-docs://app/" : "http://localhost:3000");
 }
 
 app.whenReady().then(() => {
